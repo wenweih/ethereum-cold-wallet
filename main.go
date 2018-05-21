@@ -1,11 +1,13 @@
 package main
 
-import (
-	accounts "github.com/ethereum/go-ethereum/accounts"
-	keystore "github.com/ethereum/go-ethereum/accounts/keystore"
+var (
+	config *configure
 )
 
 func main() {
-	am := accounts.NewManager("/tmp/keystore", keystore.StandardScryptN, keystore.StandardScryptP)
+	Execute()
+}
 
+func init() {
+	config = new(configure)
 }
