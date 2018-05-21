@@ -44,5 +44,5 @@ func createKeystore() {
 		log.Fatalln("Failed to write keyfile to", err.Error())
 	}
 
-	fmt.Println("generate ", address)
+	fmt.Println("Generate ", address)
 }

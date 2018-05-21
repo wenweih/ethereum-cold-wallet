@@ -8,13 +8,28 @@ import (
 	"github.com/spf13/viper"
 )
 
+var (
+	number int
+)
+
 type configure struct {
 }
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "ethereum-service",
-	Short: "Generate wallet and sign tx",
+	Short: "Generate Ethereum account and sign tx",
+}
+
+// apiCmd represents the chain command
+var genAccountCmd = &cobra.Command{
+	Use:   "genaccount",
+	Short: "Generate ethereum account",
+	Run: func(cmd *cobra.Command, args []string) {
+		for index := 0; index < number; index++ {
+			createKeystore()
+		}
+	},
 }
 
 // Execute 命令行入口
@@ -38,7 +53,6 @@ func (conf *configure) InitConfig() {
 	} else {
 		log.Fatal("Error: ethereum-service.yml not found in: ", HomeDir())
 	}
-
 	// for key, value := range viper.AllSettings() {
 	// 	switch key {
 	// 	}
@@ -46,4 +60,6 @@ func (conf *configure) InitConfig() {
 }
 
 func init() {
+	rootCmd.AddCommand(genAccountCmd)
+	genAccountCmd.Flags().IntVarP(&number, "number", "n", 10, "Generate ethereum accounts")
 }
