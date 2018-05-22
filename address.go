@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
-	"path/filepath"
 	"strings"
+	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -22,9 +22,8 @@ func createKeystore() {
 	// get the address
 	address := crypto.PubkeyToAddress(privateKey.PublicKey).Hex()
 
-	id := uuid.NewRandom()
 	key := &keystore.Key{
-		Id:         id,
+		Id:         uuid.NewRandom(),
 		Address:    crypto.PubkeyToAddress(privateKey.PublicKey),
 		PrivateKey: privateKey,
 	}
@@ -34,15 +33,21 @@ func createKeystore() {
 		log.Fatalf(err.Error())
 	}
 
-	keystoreName := strings.Join([]string{address, "json"}, ".")
-
-	if err := os.MkdirAll(filepath.Dir("/tmp/keystore/"), 0700); err != nil {
-		log.Fatalln("Could not create directory", err.Error())
+	keystorePath := strings.Join([]string{HomeDir(), config.Keystore, "keystore"}, "/")
+	if _, err := os.Stat(keystorePath); os.IsNotExist(err) {
+		if err := os.MkdirAll(keystorePath, 0700); err != nil {
+			log.Fatalln("Could not create directory", err.Error())
+		}
 	}
 
-	if err := ioutil.WriteFile(strings.Join([]string{"/tmp/keystore", keystoreName}, "/"), keyjson, 0600); err != nil {
+	keystoreName := strings.Join([]string{address, "json"}, ".")
+	keystorefile := strings.Join([]string{keystorePath, keystoreName}, "/")
+	if err := ioutil.WriteFile(keystorefile, keyjson, 0600); err != nil {
 		log.Fatalln("Failed to write keyfile to", err.Error())
 	}
 
-	fmt.Println("Generate ", address)
+	log.WithFields(log.Fields{
+		"Generate Ethereum account": address,
+		"Time:":                     time.Now().Format("Mon Jan _2 15:04:05 2006"),
+	}).Info("")
 }

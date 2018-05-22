@@ -7,8 +7,3 @@ var (
 func main() {
 	Execute()
 }
-
-func init() {
-	config = new(configure)
-	initLogger()
-}

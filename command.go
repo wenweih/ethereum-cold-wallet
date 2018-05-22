@@ -1,8 +1,9 @@
 package main
 
 import (
-	"fmt"
-	"log"
+	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -13,6 +14,9 @@ var (
 )
 
 type configure struct {
+	Keystore  string
+	RandomPwd string
+	FixedPwd  string
 }
 
 // rootCmd represents the base command when called without any subcommands
@@ -34,7 +38,6 @@ var genAccountCmd = &cobra.Command{
 
 // Execute 命令行入口
 func Execute() {
-	config.InitConfig()
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatalf(err.Error())
 	}
@@ -49,17 +52,30 @@ func (conf *configure) InitConfig() {
 	// If a config file is found, read it in.
 	err := viper.ReadInConfig()
 	if err == nil {
-		fmt.Println("Using Configure file:", viper.ConfigFileUsed())
+		log.WithFields(log.Fields{
+			"Using Configure file": viper.ConfigFileUsed(),
+			"Time:":                time.Now().Format("Mon Jan _2 15:04:05 2006"),
+		}).Info()
 	} else {
 		log.Fatal("Error: ethereum-service.yml not found in: ", HomeDir())
 	}
-	// for key, value := range viper.AllSettings() {
-	// 	switch key {
-	// 	}
-	// }
+
+	for key, value := range viper.AllSettings() {
+		switch key {
+		case "key_store_path":
+			conf.Keystore = value.(string)
+		case "random_pwd_path":
+			conf.RandomPwd = value.(string)
+		case "fixed_pwd_path":
+			conf.FixedPwd = value.(string)
+		}
+	}
 }
 
 func init() {
+	config = new(configure)
+	config.InitConfig()
+	initLogger()
 	rootCmd.AddCommand(genAccountCmd)
 	genAccountCmd.Flags().IntVarP(&number, "number", "n", 10, "Generate ethereum accounts")
 }

@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	homedir "github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
@@ -29,7 +30,10 @@ func initLogger() {
 	mw := io.MultiWriter(os.Stdout, file)
 	if err == nil {
 		log.SetOutput(mw)
-		log.Info("Note: all operate is recorded to log")
+		log.WithFields(log.Fields{
+			"Note":  "all operate is recorded",
+			"Time:": time.Now().Format("Mon Jan _2 15:04:05 2006"),
+		}).Warn("")
 	} else {
 		log.Error(err.Error())
 	}
