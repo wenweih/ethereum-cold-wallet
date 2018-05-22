@@ -10,4 +10,5 @@ func main() {
 
 func init() {
 	config = new(configure)
+	initLogger()
 }
