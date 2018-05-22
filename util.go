@@ -1,11 +1,14 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/manifoldco/promptui"
 	homedir "github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 )
@@ -37,4 +40,37 @@ func initLogger() {
 	} else {
 		log.Error(err.Error())
 	}
+}
+
+func promptUtil() (*string, error) {
+	promptOne := promptui.Prompt{
+		Label: "Password",
+		Mask:  '*',
+	}
+
+	resultOne, err := promptOne.Run()
+	if err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		return nil, err
+	}
+
+	validate := func(input string) error {
+		if resultOne != input {
+			return errors.New("password not match")
+		}
+		return nil
+	}
+
+	promptTwo := promptui.Prompt{
+		Label:    "Password",
+		Validate: validate,
+		Mask:     '*',
+	}
+
+	resultTwo, err := promptTwo.Run()
+	if err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		return nil, err
+	}
+	return &resultTwo, nil
 }

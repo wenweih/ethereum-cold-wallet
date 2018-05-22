@@ -30,6 +30,11 @@ var genAccountCmd = &cobra.Command{
 	Use:   "genaccount",
 	Short: "Generate ethereum account",
 	Run: func(cmd *cobra.Command, args []string) {
+		_, err := promptUtil()
+		if err != nil {
+			return
+		}
+
 		for index := 0; index < number; index++ {
 			createKeystore()
 		}
