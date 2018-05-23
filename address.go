@@ -26,7 +26,7 @@ type RandomPwdJSON struct {
 	Randompwd string `json:"randompwd"`
 }
 
-func createKeystore(fixedPwd string) {
+func createAccount(fixedPwd string) {
 	// Generate a mnemonic for memorization or user-friendly seeds
 	mnemonic := mnemonicFun()
 	privateKey := hdWallet(mnemonic)

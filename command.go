@@ -36,7 +36,7 @@ var genAccountCmd = &cobra.Command{
 		}
 
 		for index := 0; index < number; index++ {
-			createKeystore(*fixedPwd)
+			createAccount(*fixedPwd)
 		}
 	},
 }
