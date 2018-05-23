@@ -5,13 +5,19 @@
   branch = "master"
   name = "github.com/aristanetworks/goarista"
   packages = ["monotime"]
-  revision = "af0603585f7cbc33623a0670a85a2bfdf559cf1a"
+  revision = "044db260ef3eb4e48c48047618ed6e72188deeb4"
 
 [[projects]]
   branch = "master"
   name = "github.com/btcsuite/btcd"
-  packages = ["btcec"]
+  packages = ["btcec","chaincfg","chaincfg/chainhash","wire"]
   revision = "1432d294a5b055c297457c25434efbf13384cc46"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/btcsuite/btcutil"
+  packages = [".","base58","bech32","hdkeychain"]
+  revision = "45edb4b6e59ef7890c7f4be92da61d5ebfa50b65"
 
 [[projects]]
   branch = "master"
@@ -74,10 +80,10 @@
   version = "v1.8.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/manifoldco/promptui"
   packages = [".","list","screenbuf"]
-  revision = "c0c0d3afc6a03bcb5c1df10b70b862a650db9f9b"
+  revision = "3dd80c00b7cb0bc779d1c204da6f3ae0fa6a4eee"
+  version = "v0.3.0"
 
 [[projects]]
   name = "github.com/mattn/go-colorable"
@@ -171,15 +177,21 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/tyler-smith/go-bip39"
+  packages = ["."]
+  revision = "8e7a99b3e716f36d3b080a9a70f9eb45abe4edcc"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["pbkdf2","scrypt","ssh/terminal"]
+  packages = ["pbkdf2","ripemd160","scrypt","ssh/terminal"]
   revision = "1a580b3eff7814fc9b40602fd35256c63b50f491"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "7c87d13f8e835d2fb3a70a2912c811ed0c1d241b"
+  revision = "88eb85aaee56831ad49eaf7aa80d73de9814cde2"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -208,6 +220,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9ffaca9600d65cf57d963380b62c8497abe41cbb676d0376fea4a24b2562570f"
+  inputs-digest = "557d102af5d284084f1f64a6dd0dfadfd847a89c4137fd5b24efa0b0d0b35cfa"
   solver-name = "gps-cdcl"
   solver-version = 1
