@@ -1,0 +1,5 @@
+# 文件目录规则：
+# 比如 key_store_path: "aa/bb/cc" 表示 keystore 放在在当前用户目录下 ~/aa/bb/cc/keystore
+key_store_path: ""
+random_pwd_path: ""
+fixed_pwd_path: ""
