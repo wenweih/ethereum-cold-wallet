@@ -3,6 +3,7 @@ package main
 import (
 	"time"
 
+	"github.com/olivere/elastic"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/cobra"
@@ -14,9 +15,11 @@ var (
 )
 
 type configure struct {
-	Keystore  string
-	RandomPwd string
-	FixedPwd  string
+	Keystore     string
+	RandomPwd    string
+	FixedPwd     string
+	ElasticURL   string
+	ElasticSniff bool
 }
 
 // rootCmd represents the base command when called without any subcommands
@@ -73,8 +76,21 @@ func (conf *configure) InitConfig() {
 			conf.RandomPwd = value.(string)
 		case "fixed_pwd_path":
 			conf.FixedPwd = value.(string)
+		case "elastic_url":
+			conf.ElasticURL = value.(string)
+		case "elastic_sniff":
+			conf.ElasticSniff = value.(bool)
 		}
 	}
+}
+
+func (conf *configure) elasticClient() (*elastic.Client, error) {
+	client, err := elastic.NewClient(elastic.SetURL(conf.ElasticURL),
+		elastic.SetSniff(conf.ElasticSniff))
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
 }
 
 func init() {

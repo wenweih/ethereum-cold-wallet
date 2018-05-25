@@ -52,3 +52,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/btcsuite/btcutil"
+
+[[constraint]]
+  name = "github.com/olivere/elastic"
+  version = "6.1.22"

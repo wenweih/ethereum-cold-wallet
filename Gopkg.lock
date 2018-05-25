@@ -80,6 +80,12 @@
   version = "v1.8.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/mailru/easyjson"
+  packages = [".","buffer","jlexer","jwriter"]
+  revision = "8b799c424f57fa123fc63a99d6383bc6e4c02578"
+
+[[projects]]
   name = "github.com/manifoldco/promptui"
   packages = [".","list","screenbuf"]
   revision = "3dd80c00b7cb0bc779d1c204da6f3ae0fa6a4eee"
@@ -110,6 +116,12 @@
   revision = "bb74f1db0675b241733089d5a1faa5dd8b0ef57b"
 
 [[projects]]
+  name = "github.com/olivere/elastic"
+  packages = [".","config","uritemplates"]
+  revision = "f6c25d4a1713cf170f84eff4d70485dd8108d2e7"
+  version = "v6.1.22"
+
+[[projects]]
   name = "github.com/pborman/uuid"
   packages = ["."]
   revision = "e790cca94e6cc75c7064b1332e63811d4aae1a53"
@@ -120,6 +132,12 @@
   packages = ["."]
   revision = "acdc4509485b587f5e675510c4f2c63e90ff68a8"
   version = "v1.1.0"
+
+[[projects]]
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
 
 [[projects]]
   branch = "master"
@@ -220,6 +238,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "557d102af5d284084f1f64a6dd0dfadfd847a89c4137fd5b24efa0b0d0b35cfa"
+  inputs-digest = "5d61d3326b3d732b4b14f38a6c8896de3a2dc37bfcf147c6196a18d02387060b"
   solver-name = "gps-cdcl"
   solver-version = 1
