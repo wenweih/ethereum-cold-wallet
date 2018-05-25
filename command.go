@@ -44,6 +44,14 @@ var genAccountCmd = &cobra.Command{
 	},
 }
 
+var syncCmd = &cobra.Command{
+	Use:   "sync",
+	Short: "sync chain data to elasticsearch",
+	Run: func(cmd *cobra.Command, args []string) {
+
+	},
+}
+
 // Execute 命令行入口
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
@@ -98,5 +106,6 @@ func init() {
 	config.InitConfig()
 	initLogger()
 	rootCmd.AddCommand(genAccountCmd)
+	rootCmd.AddCommand(syncCmd)
 	genAccountCmd.Flags().IntVarP(&number, "number", "n", 10, "Generate ethereum accounts")
 }
