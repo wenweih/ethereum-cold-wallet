@@ -5,19 +5,19 @@
   branch = "master"
   name = "github.com/aristanetworks/goarista"
   packages = ["monotime"]
-  revision = "044db260ef3eb4e48c48047618ed6e72188deeb4"
+  revision = "d351ae7b958f416f9cd527bb462030db8d373013"
 
 [[projects]]
   branch = "master"
   name = "github.com/btcsuite/btcd"
   packages = ["btcec","chaincfg","chaincfg/chainhash","wire"]
-  revision = "1432d294a5b055c297457c25434efbf13384cc46"
+  revision = "bc0944904505aab55e089371a892be2f87883161"
 
 [[projects]]
   branch = "master"
   name = "github.com/btcsuite/btcutil"
   packages = [".","base58","bech32","hdkeychain"]
-  revision = "45edb4b6e59ef7890c7f4be92da61d5ebfa50b65"
+  revision = "d4cc87b860166d00d6b5b9e0d3b3d71d6088d4d4"
 
 [[projects]]
   branch = "master"
@@ -27,9 +27,9 @@
 
 [[projects]]
   name = "github.com/ethereum/go-ethereum"
-  packages = [".","accounts","accounts/keystore","common","common/hexutil","common/math","common/mclock","core/types","crypto","crypto/randentropy","crypto/secp256k1","crypto/sha3","ethdb","event","log","metrics","params","rlp","trie"]
-  revision = "2688dab48c9b8ae71b8d95c7678817eaa17f2b53"
-  version = "v1.8.8"
+  packages = [".","accounts","accounts/keystore","common","common/hexutil","common/math","common/mclock","core/types","crypto","crypto/randentropy","crypto/secp256k1","crypto/sha3","ethclient","ethdb","event","log","metrics","p2p/netutil","params","rlp","rpc","trie"]
+  revision = "ff9b14617e73c07dfa028bc477fe86c1e04d80c5"
+  version = "v1.8.9"
 
 [[projects]]
   name = "github.com/fsnotify/fsnotify"
@@ -107,7 +107,7 @@
   branch = "master"
   name = "github.com/mitchellh/go-homedir"
   packages = ["."]
-  revision = "b8bc1bf767474819792c23f32d8286a45736f1c6"
+  revision = "3864e76763d94a6df2f9960b16a20a33da9f9a66"
 
 [[projects]]
   branch = "master"
@@ -144,6 +144,12 @@
   name = "github.com/rjeczalik/notify"
   packages = ["."]
   revision = "d152f3ce359a5464dc41e84a8919fc67e55bbbf0"
+
+[[projects]]
+  name = "github.com/rs/cors"
+  packages = ["."]
+  revision = "ca016a06a5753f8ba03029c0aa5e54afb1bf713f"
+  version = "v1.4.0"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
@@ -203,13 +209,19 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["pbkdf2","ripemd160","scrypt","ssh/terminal"]
-  revision = "1a580b3eff7814fc9b40602fd35256c63b50f491"
+  revision = "ab813273cd59e1333f7ae7bff5d027d4aadf528c"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/net"
+  packages = ["websocket"]
+  revision = "dfa909b99c79129e1100513e5cd36307665e5723"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "88eb85aaee56831ad49eaf7aa80d73de9814cde2"
+  revision = "c11f84a56e43e20a78cee75a7c034031ecf57d1f"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -230,6 +242,12 @@
   revision = "8dcd6a7f4951f6ff3ee9cbb919a06d8925822e57"
 
 [[projects]]
+  branch = "v2"
+  name = "gopkg.in/natefinch/npipe.v2"
+  packages = ["."]
+  revision = "c1b8fa8bdccecb0b8db834ee0b92fdbcfa606dd6"
+
+[[projects]]
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
@@ -238,6 +256,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5d61d3326b3d732b4b14f38a6c8896de3a2dc37bfcf147c6196a18d02387060b"
+  inputs-digest = "c1dc05a1f99ce421816c99e0af0ed5d63445725afa620d838d89b7224caee95d"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -3,6 +3,7 @@ package main
 import (
 	"time"
 
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/olivere/elastic"
 	log "github.com/sirupsen/logrus"
 
@@ -20,6 +21,7 @@ type configure struct {
 	FixedPwd     string
 	ElasticURL   string
 	ElasticSniff bool
+	EthRPC       string
 }
 
 // rootCmd represents the base command when called without any subcommands
@@ -48,7 +50,7 @@ var syncCmd = &cobra.Command{
 	Use:   "sync",
 	Short: "sync chain data to elasticsearch",
 	Run: func(cmd *cobra.Command, args []string) {
-
+		sync()
 	},
 }
 
@@ -88,17 +90,18 @@ func (conf *configure) InitConfig() {
 			conf.ElasticURL = value.(string)
 		case "elastic_sniff":
 			conf.ElasticSniff = value.(bool)
+		case "eth_rpc":
+			conf.EthRPC = value.(string)
 		}
 	}
 }
 
 func (conf *configure) elasticClient() (*elastic.Client, error) {
-	client, err := elastic.NewClient(elastic.SetURL(conf.ElasticURL),
-		elastic.SetSniff(conf.ElasticSniff))
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
+	return elastic.NewClient(elastic.SetURL(conf.ElasticURL), elastic.SetSniff(conf.ElasticSniff))
+}
+
+func (conf *configure) ethClient() (*ethclient.Client, error) {
+	return ethclient.Dial(conf.EthRPC)
 }
 
 func init() {
