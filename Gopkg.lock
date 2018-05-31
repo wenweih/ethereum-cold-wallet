@@ -11,7 +11,7 @@
   branch = "master"
   name = "github.com/btcsuite/btcd"
   packages = ["btcec","chaincfg","chaincfg/chainhash","wire"]
-  revision = "bc0944904505aab55e089371a892be2f87883161"
+  revision = "86fed781132ac890ee03e906e4ecd5d6fa180c64"
 
 [[projects]]
   branch = "master"
@@ -28,8 +28,8 @@
 [[projects]]
   name = "github.com/ethereum/go-ethereum"
   packages = [".","accounts","accounts/keystore","common","common/hexutil","common/math","common/mclock","core/types","crypto","crypto/randentropy","crypto/secp256k1","crypto/sha3","ethclient","ethdb","event","log","metrics","p2p/netutil","params","rlp","rpc","trie"]
-  revision = "ff9b14617e73c07dfa028bc477fe86c1e04d80c5"
-  version = "v1.8.9"
+  revision = "eae63c511ceafab14b92e274c1b18bf1700e2d3d"
+  version = "v1.8.10"
 
 [[projects]]
   name = "github.com/fsnotify/fsnotify"
@@ -118,8 +118,8 @@
 [[projects]]
   name = "github.com/olivere/elastic"
   packages = [".","config","uritemplates"]
-  revision = "f6c25d4a1713cf170f84eff4d70485dd8108d2e7"
-  version = "v6.1.22"
+  revision = "dabcc5de0a3fd6313870c223c3119e2b1e942ba3"
+  version = "v6.1.23"
 
 [[projects]]
   name = "github.com/pborman/uuid"
@@ -215,7 +215,7 @@
   branch = "master"
   name = "golang.org/x/net"
   packages = ["websocket"]
-  revision = "dfa909b99c79129e1100513e5cd36307665e5723"
+  revision = "1e491301e022f8f977054da4c2d852decd59571f"
 
 [[projects]]
   branch = "master"
