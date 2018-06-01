@@ -3,8 +3,6 @@ package main
 import (
 	"time"
 
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/olivere/elastic"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/cobra"
@@ -54,6 +52,14 @@ var syncCmd = &cobra.Command{
 	},
 }
 
+var subscribeNewBlockCmd = &cobra.Command{
+	Use:   "sub",
+	Short: "subscribe new block event",
+	Run: func(cmd *cobra.Command, args []string) {
+		subNewBlock()
+	},
+}
+
 // Execute 命令行入口
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
@@ -96,19 +102,12 @@ func (conf *configure) InitConfig() {
 	}
 }
 
-func (conf *configure) elasticClient() (*elastic.Client, error) {
-	return elastic.NewClient(elastic.SetURL(conf.ElasticURL), elastic.SetSniff(conf.ElasticSniff))
-}
-
-func (conf *configure) ethClient() (*ethclient.Client, error) {
-	return ethclient.Dial(conf.EthRPC)
-}
-
 func init() {
 	config = new(configure)
 	config.InitConfig()
 	initLogger()
 	rootCmd.AddCommand(genAccountCmd)
 	rootCmd.AddCommand(syncCmd)
+	rootCmd.AddCommand(subscribeNewBlockCmd)
 	genAccountCmd.Flags().IntVarP(&number, "number", "n", 10, "Generate ethereum accounts")
 }
