@@ -12,7 +12,7 @@ import (
 
 func subNewBlock() {
 	ctx := context.Background()
-	nodeClient, err := ethclient.Dial("/Users/hww/geth_private_data/geth.ipc")
+	nodeClient, err := ethclient.Dial(config.EthRPC)
 	if err != nil {
 		fmt.Println(config.EthRPC)
 		log.Fatalln(err.Error())

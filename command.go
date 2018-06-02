@@ -20,6 +20,7 @@ type configure struct {
 	ElasticURL   string
 	ElasticSniff bool
 	EthRPC       string
+	Mnemonic     string
 }
 
 // rootCmd represents the base command when called without any subcommands
@@ -98,6 +99,8 @@ func (conf *configure) InitConfig() {
 			conf.ElasticSniff = value.(bool)
 		case "eth_rpc":
 			conf.EthRPC = value.(string)
+		case "mnemonic_path":
+			conf.Mnemonic = value.(string)
 		}
 	}
 }
