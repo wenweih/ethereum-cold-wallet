@@ -45,6 +45,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/gocarina/gocsv"
+  packages = ["."]
+  revision = "a5c9099e2484f1551abb9433885e158610a25f4b"
+
+[[projects]]
+  branch = "master"
   name = "github.com/golang/snappy"
   packages = ["."]
   revision = "2e65f85255dbc3072edf28d6b5b8efc472979f5a"
@@ -256,6 +262,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c1dc05a1f99ce421816c99e0af0ed5d63445725afa620d838d89b7224caee95d"
+  inputs-digest = "acb34320d91a621005119c98e3dd7541a8866b11d0e57a82f5745c05d3861c25"
   solver-name = "gps-cdcl"
   solver-version = 1

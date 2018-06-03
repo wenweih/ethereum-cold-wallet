@@ -39,9 +39,15 @@ var genAccountCmd = &cobra.Command{
 			return
 		}
 
+		addresses := []*csvAddress{}
 		for index := 0; index < number; index++ {
-			createAccount(*fixedPwd)
+			address, err := createAccount(*fixedPwd)
+			if err != nil {
+				log.Fatalln(err.Error())
+			}
+			addresses = append(addresses, &csvAddress{Address: *address})
 		}
+		exportCSV(addresses)
 	},
 }
 

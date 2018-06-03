@@ -6,9 +6,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 
+	"github.com/gocarina/gocsv"
 	log "github.com/sirupsen/logrus"
 	bip39 "github.com/tyler-smith/go-bip39"
 
@@ -39,16 +41,20 @@ type MnemonicJSON struct {
 	PATH     string `json:"path"`
 }
 
-func createAccount(fixedPwd string) {
+type csvAddress struct {
+	Address string `csv:"address"`
+}
+
+func createAccount(fixedPwd string) (*string, error) {
 	// Generate a mnemonic for memorization or user-friendly seeds
 	mnemonic, err := mnemonicFun()
 	if err != nil {
-		log.Fatalln(err.Error())
+		return nil, err
 	}
 
 	privateKey, path, err := hdWallet(*mnemonic)
 	if err != nil {
-		log.Fatalln(err.Error())
+		return nil, err
 	}
 
 	// pristr := hex.EncodeToString(privateKey.D.Bytes())
@@ -73,6 +79,8 @@ func createAccount(fixedPwd string) {
 		"Generate Ethereum account": address,
 		"Time:":                     time.Now().Format("Mon Jan _2 15:04:05 2006"),
 	}).Info("")
+
+	return &address, nil
 }
 
 func accountAuth(fixPwd, randomPwd string) string {
@@ -233,4 +241,26 @@ func saveKetstore(key *ecdsa.PrivateKey, fixedPwd, randomPwd string) {
 	if err := ioutil.WriteFile(keystorefile, keyjson, 0600); err != nil {
 		log.Fatalln("Failed to write keyfile to", err.Error())
 	}
+}
+
+func exportCSV(addresses []*csvAddress) {
+	addressPath := strings.Join([]string{HomeDir(), "eth_address.csv"}, "/")
+	addressFile, err := os.OpenFile(addressPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, os.ModePerm)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	defer addressFile.Close()
+	originAddress := []*csvAddress{}
+	if err := gocsv.UnmarshalFile(addressFile, &originAddress); err != nil {
+		if err := gocsv.MarshalFile(&addresses, addressFile); err != nil {
+			log.Fatalln(err.Error())
+		}
+	} else {
+		gocsv.MarshalWithoutHeaders(&addresses, addressFile)
+	}
+
+	log.WithFields(log.Fields{
+		"export address to file": addressFile.Name(),
+		"Time:":                  time.Now().Format("Mon Jan _2 15:04:05 2006"),
+	}).Warn()
 }
