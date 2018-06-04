@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"os"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/gocarina/gocsv"
 	"github.com/olivere/elastic"
 	log "github.com/sirupsen/logrus"
 )
@@ -20,38 +23,38 @@ func sync() {
 		log.Fatalln(err.Error())
 	}
 
-	esClient, err := elastic.NewClient(elastic.SetURL(config.ElasticURL), elastic.SetSniff(config.ElasticSniff))
+	// esClient, err := elastic.NewClient(elastic.SetURL(config.ElasticURL), elastic.SetSniff(config.ElasticSniff))
+	// if err != nil {
+	// 	log.Fatalln(err.Error())
+	// }
+	//
+	// indices := []string{"esblock", "estx", "esaccount", "escontract"}
+	// for _, index := range indices {
+	// 	switch index {
+	// 	case "esblock":
+	// esIndex(ctx, esClient, index, blockMapping)
+	// 	case "estx":
+	// 		esIndex(ctx, esClient, index, txMapping)
+	// 	case "esaccount":
+	// 	case "escontract":
+	// 		esIndex(ctx, esClient, index, contractMapping)
+	// 	}
+	// }
+
+	block, err := nodeClient.BlockByNumber(ctx, big.NewInt(4692053))
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
 
-	indices := []string{"esblock", "estx", "esaccount", "escontract"}
-	for _, index := range indices {
-		switch index {
-		case "esblock":
-			esIndex(ctx, esClient, index, blockMapping)
-		case "estx":
-			esIndex(ctx, esClient, index, txMapping)
-		case "esaccount":
-		case "escontract":
-			esIndex(ctx, esClient, index, contractMapping)
-		}
-	}
+	// blockParams := esBlockFunc(block)
 
-	block, err := nodeClient.BlockByNumber(ctx, big.NewInt(3))
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-
-	blockParams := esBlockFunc(block)
-
-	esClient.Index().Index("esblock").Type("block").Id(block.Number().String()).BodyJson(blockParams).Do(ctx)
+	// esClient.Index().Index("esblock").Type("block").Id(block.Number().String()).BodyJson(blockParams).Do(ctx)
 	txs := block.Transactions()
 	for _, tx := range txs {
 		fmt.Println("tx", tx.Hash().Hex())
 		fmt.Println("to", tx.To())
 	}
-	d, err := nodeClient.NonceAt(ctx, common.HexToAddress("0xd24400ae8BfEBb18cA49Be86258a3C749cf46853"), nil)
+	d, err := nodeClient.BalanceAt(ctx, common.HexToAddress("0xd24400ae8BfEBb18cA49Be86258a3C749cf46853"), nil)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
@@ -139,6 +142,41 @@ type esContract struct {
 	ABI   string `json:"abi"`
 }
 
+type esSubAddress struct {
+	Address string `json:"address"`
+}
+
+func csv2es(ctx context.Context, esClient *elastic.Client) {
+	esIndex(ctx, esClient, "eth_sub_address", subAddressMapping)
+
+	addressPath := strings.Join([]string{HomeDir(), "eth_address.csv"}, "/")
+	addressFile, err := os.OpenFile(addressPath, os.O_RDWR, os.ModePerm)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	defer addressFile.Close()
+
+	addresses := []*csvAddress{}
+	if err := gocsv.UnmarshalFile(addressFile, &addresses); err != nil {
+		log.Fatalln(err.Error())
+	}
+	for _, address := range addresses {
+		findOrCreateFromSubAddress(ctx, esClient, address)
+	}
+
+}
+
+func findOrCreateFromSubAddress(ctx context.Context, esClient *elastic.Client, address *csvAddress) {
+	q := elastic.NewBoolQuery()
+	q = q.Must(elastic.NewTermQuery("address", address.Address))
+	searchResult, _ := esClient.Search().Index("eth_sub_address").Type("sub_address").Query(q).Do(ctx)
+	if len(searchResult.Hits.Hits) < 1 {
+		var newSubAddress = new(esSubAddress)
+		newSubAddress.Address = address.Address
+		esClient.Index().Index("eth_sub_address").Type("sub_address").BodyJson(newSubAddress).Refresh("true").Do(ctx)
+	}
+}
+
 const blockMapping = `
 {
   "settings": {
@@ -215,6 +253,9 @@ const txMapping = `
 				},
 				"value": {
 					"type": "double"
+				},
+				"input": {
+					"type": "text"
 				}
       }
     }
@@ -239,6 +280,23 @@ const contractMapping = `
 				"abi": {
 					"type": "text"
 				}
+      }
+    }
+  }
+}`
+
+const subAddressMapping = `
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0
+  },
+  "mappings": {
+    "sub_address": {
+      "properties": {
+        "address": {
+          "type": "keyword"
+        }
       }
     }
   }
