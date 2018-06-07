@@ -21,6 +21,9 @@ type configure struct {
 	ElasticSniff bool
 	EthRPC       string
 	Mnemonic     string
+	MaxBalance   float64
+	To           string
+	NetMode      string
 }
 
 // rootCmd represents the base command when called without any subcommands
@@ -67,6 +70,14 @@ var subscribeNewBlockCmd = &cobra.Command{
 	},
 }
 
+var signCmd = &cobra.Command{
+	Use:   "sign",
+	Short: "sigin transactio",
+	Run: func(cmd *cobra.Command, args []string) {
+		signTxs()
+	},
+}
+
 // Execute 命令行入口
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
@@ -107,6 +118,12 @@ func (conf *configure) InitConfig() {
 			conf.EthRPC = value.(string)
 		case "mnemonic_path":
 			conf.Mnemonic = value.(string)
+		case "max_balance":
+			conf.MaxBalance = value.(float64)
+		case "to":
+			conf.To = value.(string)
+		case "net_mode":
+			conf.NetMode = value.(string)
 		}
 	}
 }
@@ -116,7 +133,8 @@ func init() {
 	config.InitConfig()
 	initLogger()
 	rootCmd.AddCommand(genAccountCmd)
-	rootCmd.AddCommand(syncCmd)
+	// rootCmd.AddCommand(syncCmd)
 	rootCmd.AddCommand(subscribeNewBlockCmd)
 	genAccountCmd.Flags().IntVarP(&number, "number", "n", 10, "Generate ethereum accounts")
+	genAccountCmd.MarkFlagRequired("number")
 }

@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"crypto/ecdsa"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"io"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -168,11 +171,11 @@ func saveFixedPwd(address, fixedPwd string) {
 		log.Fatalf(err.Error())
 	}
 	hexFixedPwdJSON = append(hexFixedPwdJSON, '\n')
-	fixedPwdPath, err := mkdirBySlice([]string{HomeDir(), config.FixedPwd, "fixedpwd"})
+	fixedPwdPath, err := mkdirBySlice([]string{HomeDir(), config.FixedPwd})
 	if err != nil {
 		log.Fatalln("Could not create directory", err.Error())
 	}
-	fixedPwdFile := strings.Join([]string{*fixedPwdPath, "randompwd.json"}, "/")
+	fixedPwdFile := strings.Join([]string{*fixedPwdPath, "fixedpwd.json"}, "/")
 	if err = appenFile(fixedPwdFile, hexFixedPwdJSON, 0600); err != nil {
 		log.Fatalln("Failed to write keyfile to", err.Error())
 	}
@@ -188,7 +191,7 @@ func saveRandomPwd(address, randomPwd string) {
 		log.Fatalf(err.Error())
 	}
 	hexRandomPwdJSON = append(hexRandomPwdJSON, '\n')
-	randomPwdPath, err := mkdirBySlice([]string{HomeDir(), config.RandomPwd, "randompwd"})
+	randomPwdPath, err := mkdirBySlice([]string{HomeDir(), config.RandomPwd})
 	if err != nil {
 		log.Fatalln("Could not create directory", err.Error())
 	}
@@ -196,6 +199,57 @@ func saveRandomPwd(address, randomPwd string) {
 	if err = appenFile(randomPwdFile, hexRandomPwdJSON, 0600); err != nil {
 		log.Fatalln("Failed to write keyfile to", err.Error())
 	}
+}
+
+func readPwd(address, pwdType string) (*string, error) {
+	var (
+		dir     string
+		PwdFile string
+	)
+	switch pwdType {
+	case "fixedpwd":
+		dir = strings.Join([]string{HomeDir(), config.FixedPwd}, "/")
+		PwdFile = strings.Join([]string{dir, "fixedpwd.json"}, "/")
+	case "randompwd":
+		dir = strings.Join([]string{HomeDir(), config.RandomPwd}, "/")
+		PwdFile = strings.Join([]string{dir, "randompwd.json"}, "/")
+	default:
+		return nil, errors.New("pwdType error")
+	}
+
+	jsonFile, err := os.Open(PwdFile)
+	if err != nil {
+		return nil, err
+	}
+	defer jsonFile.Close()
+
+	reader := bufio.NewReader(jsonFile)
+
+	var pwd = new(string)
+	for {
+		line, _, err := reader.ReadLine()
+		if err == io.EOF {
+			break
+		}
+
+		switch pwdType {
+		case "fixedpwd":
+			var fixedpwd FixedPwdJSON
+			json.Unmarshal(line, &fixedpwd)
+			if fixedpwd.Address == address {
+				pwd = &(fixedpwd.FixedPwd)
+				return pwd, nil
+			}
+		case "randompwd":
+			var randompwd RandomPwdJSON
+			json.Unmarshal(line, &randompwd)
+			if randompwd.Address == address {
+				pwd = &(randompwd.Randompwd)
+				return pwd, nil
+			}
+		}
+	}
+	return pwd, nil
 }
 
 func saveMnemonic(address, mnemonic, path string) {
@@ -206,7 +260,7 @@ func saveMnemonic(address, mnemonic, path string) {
 	}
 
 	hexMnemonicJSON, err := json.Marshal(m)
-	mnemonicPath, err := mkdirBySlice([]string{HomeDir(), config.Mnemonic, "mnemonic"})
+	mnemonicPath, err := mkdirBySlice([]string{HomeDir(), config.Mnemonic})
 	if err != nil {
 		log.Fatalln("Could not create directory", err.Error())
 	}
@@ -230,7 +284,7 @@ func saveKetstore(key *ecdsa.PrivateKey, fixedPwd, randomPwd string) {
 		log.Fatalf(err.Error())
 	}
 
-	keystorePath, err := mkdirBySlice([]string{HomeDir(), config.Keystore, "keystore"})
+	keystorePath, err := mkdirBySlice([]string{HomeDir(), config.Keystore})
 	if err != nil {
 		log.Fatalln("Could not create directory", err.Error())
 	}
@@ -241,6 +295,36 @@ func saveKetstore(key *ecdsa.PrivateKey, fixedPwd, randomPwd string) {
 	if err := ioutil.WriteFile(keystorefile, keyjson, 0600); err != nil {
 		log.Fatalln("Failed to write keyfile to", err.Error())
 	}
+}
+
+func readKeyStore(address string) ([]byte, error) {
+	dir := strings.Join([]string{HomeDir(), config.Keystore}, "/")
+	keystoreName := strings.Join([]string{address, "json"}, ".")
+	keystorefile := strings.Join([]string{dir, keystoreName}, "/")
+	return ioutil.ReadFile(keystorefile)
+}
+
+func decodeKS2Key(addressHex *string) (*keystore.Key, error) {
+	keyjson, err := readKeyStore(*addressHex)
+	if err != nil {
+		return nil, errors.New(strings.Join([]string{"read keystore error", err.Error()}, " "))
+	}
+	fixedpwd, err := readPwd(*addressHex, "fixedpwd")
+	if err != nil {
+		return nil, errors.New(strings.Join([]string{"read fixedpwd error", err.Error()}, " "))
+	}
+	randompwd, _ := readPwd(*addressHex, "randompwd")
+	if err != nil {
+		return nil, errors.New(strings.Join([]string{"read randompwd error", err.Error()}, " "))
+	}
+
+	auth := accountAuth(*fixedpwd, *randompwd)
+
+	key, err := keystore.DecryptKey(keyjson, auth)
+	if err != nil {
+		return nil, err
+	}
+	return key, nil
 }
 
 func exportCSV(addresses []*csvAddress) {

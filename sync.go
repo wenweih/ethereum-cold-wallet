@@ -163,7 +163,7 @@ func csv2es(ctx context.Context, esClient *elastic.Client) {
 	for _, address := range addresses {
 		findOrCreateFromSubAddress(ctx, esClient, address)
 	}
-
+	log.Info("csv2es done")
 }
 
 func findOrCreateFromSubAddress(ctx context.Context, esClient *elastic.Client, address *csvAddress) {
