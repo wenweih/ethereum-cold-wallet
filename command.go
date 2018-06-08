@@ -24,6 +24,8 @@ type configure struct {
 	MaxBalance   float64
 	To           string
 	NetMode      string
+	RawTx        string
+	SignedTx     string
 }
 
 // rootCmd represents the base command when called without any subcommands
@@ -124,6 +126,10 @@ func (conf *configure) InitConfig() {
 			conf.To = value.(string)
 		case "net_mode":
 			conf.NetMode = value.(string)
+		case "raw_tx_path":
+			conf.RawTx = value.(string)
+		case "signed_tx_path":
+			conf.SignedTx = value.(string)
 		}
 	}
 }

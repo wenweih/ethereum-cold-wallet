@@ -3,7 +3,9 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"math/big"
 	"strings"
 
@@ -14,20 +16,53 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
-func exportRawHexTx() {
-
+// RawTx 交易结构体
+type RawTx struct {
+	From     string  `json:"from"`
+	To       string  `json:"to"`
+	RawTxHex string  `json:"rawtx"`
+	Value    big.Int `json:"value"`
+	Nonce    uint64  `json:"nonce"`
 }
-func constructTx(nodeClient *ethclient.Client, nonce uint64, balance *big.Int, hexAddressFrom, hexAddressTo string) (*common.Address, *common.Address, *string, *big.Int, error) {
+
+func exportRawHexTx(from, to *common.Address, rawTxHex *string, value *big.Int, nonce *uint64) error {
+	fromHex := (*from).Hex()
+	toHex := (*to).Hex()
+	rawTx := &RawTx{
+		From:     fromHex,
+		To:       toHex,
+		RawTxHex: *rawTxHex,
+		Value:    *value,
+		Nonce:    *nonce,
+	}
+
+	brawTx, err := json.Marshal(rawTx)
+	if err != nil {
+		return err
+	}
+
+	rawTxPath, err := mkdirBySlice([]string{HomeDir(), config.RawTx})
+	if err != nil {
+		return errors.New(strings.Join([]string{"Could not create directory", err.Error()}, " "))
+	}
+
+	rawTxName := strings.Join([]string{"from", fromHex, "json"}, ".")
+	rawTxfile := strings.Join([]string{*rawTxPath, rawTxName}, "/")
+	if err := ioutil.WriteFile(rawTxfile, brawTx, 0600); err != nil {
+		return errors.New(strings.Join([]string{"Failed to write keyfile to", err.Error()}, " "))
+	}
+	return nil
+}
+func constructTx(nodeClient *ethclient.Client, nonce uint64, balance *big.Int, hexAddressFrom, hexAddressTo *string) (*common.Address, *common.Address, *string, *big.Int, error) {
 	gasLimit := uint64(21000) // in units
 	gasPrice, err := nodeClient.SuggestGasPrice(context.Background())
 	if err != nil {
 		return nil, nil, nil, nil, errors.New(strings.Join([]string{"get gasPrice error", err.Error()}, " "))
 	}
 
-	if !common.IsHexAddress(hexAddressTo) {
-		return nil, nil, nil, nil, errors.New(strings.Join([]string{hexAddressTo, "invalidate"}, " "))
+	if !common.IsHexAddress(*hexAddressTo) {
+		return nil, nil, nil, nil, errors.New(strings.Join([]string{*hexAddressTo, "invalidate"}, " "))
 	}
-
 	var (
 		txFee = new(big.Int)
 		value = new(big.Int)
@@ -36,14 +71,14 @@ func constructTx(nodeClient *ethclient.Client, nonce uint64, balance *big.Int, h
 	txFee = txFee.Mul(gasPrice, big.NewInt(int64(gasLimit)))
 	value = value.Sub(balance, txFee)
 
-	tx := types.NewTransaction(nonce, common.HexToAddress(hexAddressTo), value, gasLimit, gasPrice, nil)
+	tx := types.NewTransaction(nonce, common.HexToAddress(*hexAddressTo), value, gasLimit, gasPrice, nil)
 	rawTxHex, err := encodeTx(tx)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, errors.New(strings.Join([]string{"encode raw tx error", err.Error()}, " "))
 	}
 
-	from := common.HexToAddress(hexAddressFrom)
-	to := common.HexToAddress(hexAddressTo)
+	from := common.HexToAddress(*hexAddressFrom)
+	to := common.HexToAddress(*hexAddressTo)
 	return &from, &to, rawTxHex, value, nil
 }
 
@@ -112,7 +147,7 @@ func signTx(txHex, fromAddressHex *string) (*string, error) {
 func sendTx(signTxHex, to *string, nodeClient *ethclient.Client) (*string, error) {
 	signTx, _ := decodeTx(signTxHex)
 	if strings.ToLower(signTx.To().Hex()) != config.To {
-		return nil, errors.New("decode tx and to file error")
+		return nil, errors.New("decode tx and to field error")
 	}
 
 	if err := nodeClient.SendTransaction(context.Background(), signTx); err != nil {

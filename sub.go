@@ -54,26 +54,42 @@ func subNewBlock() {
 					continue
 				}
 
-				balanceDecimal, _ := decimal.NewFromString(balance.String())
-				ethFac, _ := decimal.NewFromString("0.000000000000000001")
-				amount := balanceDecimal.Mul(ethFac)
-				settingBalance := decimal.NewFromFloat(config.MaxBalance)
-				if amount.GreaterThan(settingBalance) {
-					_, _, txHex, _, _ := constructTx(nodeClient, *pendingNonceAt, balance, *address, config.To)
-					signTxHex, err := signTx(txHex, address)
-					if err != nil {
-						log.Errorln(err.Error())
-					}
-
-					hash, err := sendTx(signTxHex, &(config.To), nodeClient)
-					if err != nil {
-						log.Fatalln("xxx", err.Error())
-					}
-					fmt.Println("txhash", *hash)
+				rawTxHex, err := applyWithdrawAndConstructRawTx(balance, pendingNonceAt, nodeClient, address, &(config.To))
+				if err != nil {
+					log.Fatalln(err.Error())
 				}
+
+				signTxHex, err := signTx(rawTxHex, address)
+				if err != nil {
+					log.Errorln(err.Error())
+				}
+
+				hash, err := sendTx(signTxHex, &(config.To), nodeClient)
+				if err != nil {
+					log.Fatalln("xxx", err.Error())
+				}
+				fmt.Println("txhash", *hash)
 			}
 		}
 	}
+}
+
+func applyWithdrawAndConstructRawTx(balance *big.Int, nonce *uint64, client *ethclient.Client, from, to *string) (*string, error) {
+	balanceDecimal, _ := decimal.NewFromString(balance.String())
+	ethFac, _ := decimal.NewFromString("0.000000000000000001")
+	amount := balanceDecimal.Mul(ethFac)
+	settingBalance := decimal.NewFromFloat(config.MaxBalance)
+	if amount.GreaterThan(settingBalance) {
+		fromAdd, toAdd, rawTxHex, value, err := constructTx(client, *nonce, balance, from, to)
+		if err != nil {
+			return nil, err
+		}
+		if err := exportRawHexTx(fromAdd, toAdd, rawTxHex, value, nonce); err != nil {
+			return nil, errors.New(strings.Join([]string{"sub address:", *from, "hased applied withdraw, but fail to export rawTxHex to ", config.RawTx, err.Error()}, " "))
+		}
+		return rawTxHex, nil
+	}
+	return nil, errors.New("balance not fit the configure")
 }
 
 func addressWithAmount(nodeclient *ethclient.Client, esClient *elastic.Client, address string) (*string, *big.Int, *uint64, error) {
