@@ -68,7 +68,7 @@ var subscribeNewBlockCmd = &cobra.Command{
 	Use:   "sub",
 	Short: "subscribe new block event",
 	Run: func(cmd *cobra.Command, args []string) {
-		subNewBlock()
+		subNewBlockCmd()
 	},
 }
 
@@ -76,7 +76,7 @@ var signCmd = &cobra.Command{
 	Use:   "sign",
 	Short: "sigin transactio",
 	Run: func(cmd *cobra.Command, args []string) {
-		signTxs()
+		signTxCmd()
 	},
 }
 
@@ -139,6 +139,7 @@ func init() {
 	config.InitConfig()
 	initLogger()
 	rootCmd.AddCommand(genAccountCmd)
+	rootCmd.AddCommand(signCmd)
 	// rootCmd.AddCommand(syncCmd)
 	rootCmd.AddCommand(subscribeNewBlockCmd)
 	genAccountCmd.Flags().IntVarP(&number, "number", "n", 10, "Generate ethereum accounts")

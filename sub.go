@@ -17,7 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-func subNewBlock() {
+func subNewBlockCmd() {
 	ctx := context.Background()
 	esClient, err := elastic.NewClient(elastic.SetURL(config.ElasticURL), elastic.SetSniff(config.ElasticSniff))
 	if err != nil {
@@ -59,7 +59,7 @@ func subNewBlock() {
 					log.Fatalln(err.Error())
 				}
 
-				signTxHex, err := signTx(rawTxHex, address)
+				_, _, signTxHex, _, _, err := signTx(rawTxHex, address)
 				if err != nil {
 					log.Errorln(err.Error())
 				}
@@ -80,11 +80,11 @@ func applyWithdrawAndConstructRawTx(balance *big.Int, nonce *uint64, client *eth
 	amount := balanceDecimal.Mul(ethFac)
 	settingBalance := decimal.NewFromFloat(config.MaxBalance)
 	if amount.GreaterThan(settingBalance) {
-		fromAdd, toAdd, rawTxHex, value, err := constructTx(client, *nonce, balance, from, to)
+		fromHex, toHex, rawTxHex, value, err := constructTx(client, *nonce, balance, from, to)
 		if err != nil {
 			return nil, err
 		}
-		if err := exportRawHexTx(fromAdd, toAdd, rawTxHex, value, nonce); err != nil {
+		if err := exportHexTx(fromHex, toHex, rawTxHex, value, nonce, false); err != nil {
 			return nil, errors.New(strings.Join([]string{"sub address:", *from, "hased applied withdraw, but fail to export rawTxHex to ", config.RawTx, err.Error()}, " "))
 		}
 		return rawTxHex, nil
