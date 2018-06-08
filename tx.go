@@ -60,6 +60,7 @@ func exportHexTx(from, to, txHex *string, value *big.Int, nonce *uint64, signed 
 	log.Infoln("Exported HexTx to", txfile)
 	return nil
 }
+
 func constructTx(nodeClient *ethclient.Client, nonce uint64, balance *big.Int, hexAddressFrom, hexAddressTo *string) (*string, *string, *string, *big.Int, error) {
 	gasLimit := uint64(21000) // in units
 	gasPrice, err := nodeClient.SuggestGasPrice(context.Background())
@@ -118,17 +119,10 @@ func signTxCmd() {
 	}
 
 	for _, file := range files {
-		fileName := strings.Join([]string{HomeDir(), config.RawTx, file.Name()}, "/")
-		bRawTx, err := ioutil.ReadFile(fileName)
+		fileName := file.Name()
+		tx, err := readTxHex(&fileName, false)
 		if err != nil {
-			log.Errorln("can't read", fileName, " ", err.Error())
-			continue
-		}
-
-		var tx Tx
-		if err := json.Unmarshal(bRawTx, &tx); err != nil {
-			log.Errorln("can't Unmarshal", fileName, " to RawTx struct", err.Error())
-			continue
+			log.Errorln(err.Error())
 		}
 
 		rawtxHex := tx.TxHex
@@ -144,6 +138,51 @@ func signTxCmd() {
 			continue
 		}
 	}
+}
+
+func sendTxCmd(nodeClient *ethclient.Client) {
+	files, err := ioutil.ReadDir(strings.Join([]string{HomeDir(), config.SignedTx}, "/"))
+	if err != nil {
+		log.Fatalln("read raw tx error", err.Error())
+	}
+
+	for _, file := range files {
+		fileName := file.Name()
+		tx, err := readTxHex(&fileName, true)
+		if err != nil {
+			log.Errorln(err.Error())
+		}
+
+		signedTxHex := tx.TxHex
+		to := config.To
+		hash, err := sendTx(&signedTxHex, &to, nodeClient)
+		if err != nil {
+			log.Errorln("send tx: ", fileName, "fail", err.Error())
+		} else {
+			log.Infoln("send tx: ", *hash, "success")
+		}
+
+	}
+}
+
+func readTxHex(fileName *string, signed bool) (*Tx, error) {
+	var filePath string
+	if signed {
+		filePath = strings.Join([]string{HomeDir(), config.SignedTx, *fileName}, "/")
+	} else {
+		filePath = strings.Join([]string{HomeDir(), config.RawTx, *fileName}, "/")
+	}
+
+	bRawTx, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return nil, errors.New(strings.Join([]string{"can't read", filePath, err.Error()}, " "))
+	}
+
+	var tx Tx
+	if err := json.Unmarshal(bRawTx, &tx); err != nil {
+		return nil, errors.New(strings.Join([]string{"can't Unmarshal", filePath, "to RawTx struct"}, " "))
+	}
+	return &tx, nil
 }
 
 func signTx(txHex, fromAddressHex *string) (*string, *string, *string, *big.Int, *uint64, error) {
@@ -191,7 +230,7 @@ func signTx(txHex, fromAddressHex *string) (*string, *string, *string, *big.Int,
 
 func sendTx(signTxHex, to *string, nodeClient *ethclient.Client) (*string, error) {
 	signTx, _ := decodeTx(signTxHex)
-	if strings.ToLower(signTx.To().Hex()) != config.To {
+	if strings.ToLower(signTx.To().Hex()) != *to {
 		return nil, errors.New("decode tx and to field error")
 	}
 

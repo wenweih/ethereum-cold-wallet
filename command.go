@@ -3,6 +3,7 @@ package main
 import (
 	"time"
 
+	"github.com/ethereum/go-ethereum/ethclient"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/cobra"
@@ -80,6 +81,18 @@ var signCmd = &cobra.Command{
 	},
 }
 
+var sendCmd = &cobra.Command{
+	Use:   "send",
+	Short: "broadcast signex transaction to ethereum network",
+	Run: func(cmd *cobra.Command, args []string) {
+		nodeClient, err := ethclient.Dial(config.EthRPC)
+		if err != nil {
+			log.Fatalln(err.Error())
+		}
+		sendTxCmd(nodeClient)
+	},
+}
+
 // Execute 命令行入口
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
@@ -140,6 +153,7 @@ func init() {
 	initLogger()
 	rootCmd.AddCommand(genAccountCmd)
 	rootCmd.AddCommand(signCmd)
+	rootCmd.AddCommand(sendCmd)
 	// rootCmd.AddCommand(syncCmd)
 	rootCmd.AddCommand(subscribeNewBlockCmd)
 	genAccountCmd.Flags().IntVarP(&number, "number", "n", 10, "Generate ethereum accounts")
