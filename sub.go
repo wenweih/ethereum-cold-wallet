@@ -22,7 +22,7 @@ func subNewBlockCmd() {
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
-	esClient.DeleteIndex("eth_sub_address").Do(ctx)
+	// esClient.DeleteIndex("eth_sub_address").Do(ctx)
 	csv2es(ctx, esClient)
 	nodeClient, err := ethclient.Dial(config.EthRPC)
 	if err != nil {
