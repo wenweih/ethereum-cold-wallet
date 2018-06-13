@@ -27,6 +27,7 @@ type configure struct {
 	NetMode      string
 	RawTx        string
 	SignedTx     string
+	DB           string
 }
 
 // rootCmd represents the base command when called without any subcommands
@@ -70,6 +71,14 @@ var subscribeNewBlockCmd = &cobra.Command{
 	Short: "subscribe new block event",
 	Run: func(cmd *cobra.Command, args []string) {
 		subNewBlockCmd()
+	},
+}
+
+var constructCmd = &cobra.Command{
+	Use:   "construct",
+	Short: "construct transactio",
+	Run: func(cmd *cobra.Command, args []string) {
+		constructTxCmd()
 	},
 }
 
@@ -143,6 +152,8 @@ func (conf *configure) InitConfig() {
 			conf.RawTx = value.(string)
 		case "signed_tx_path":
 			conf.SignedTx = value.(string)
+		case "db_mysql":
+			conf.DB = value.(string)
 		}
 	}
 }
@@ -152,10 +163,11 @@ func init() {
 	config.InitConfig()
 	initLogger()
 	rootCmd.AddCommand(genAccountCmd)
+	rootCmd.AddCommand(subscribeNewBlockCmd)
+	rootCmd.AddCommand(constructCmd)
 	rootCmd.AddCommand(signCmd)
 	rootCmd.AddCommand(sendCmd)
 	// rootCmd.AddCommand(syncCmd)
-	rootCmd.AddCommand(subscribeNewBlockCmd)
 	genAccountCmd.Flags().IntVarP(&number, "number", "n", 10, "Generate ethereum accounts")
 	genAccountCmd.MarkFlagRequired("number")
 }

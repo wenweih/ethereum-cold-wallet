@@ -17,6 +17,10 @@ import (
 )
 
 func subNewBlockCmd() {
+	ormDB := ormBbAlias{dbConn()}
+	ormDB.DBMigrate()
+	defer ormDB.Close()
+
 	ctx := context.Background()
 	esClient, err := elastic.NewClient(elastic.SetURL(config.ElasticURL), elastic.SetSniff(config.ElasticSniff))
 	if err != nil {

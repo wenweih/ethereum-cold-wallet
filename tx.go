@@ -61,6 +61,10 @@ func exportHexTx(from, to, txHex *string, value *big.Int, nonce *uint64, signed 
 	return nil
 }
 
+func constructTxCmd() {
+
+}
+
 func constructTx(nodeClient *ethclient.Client, nonce uint64, balance *big.Int, hexAddressFrom, hexAddressTo *string) (*string, *string, *string, *big.Int, error) {
 	gasLimit := uint64(21000) // in units
 	gasPrice, err := nodeClient.SuggestGasPrice(context.Background())
@@ -71,6 +75,7 @@ func constructTx(nodeClient *ethclient.Client, nonce uint64, balance *big.Int, h
 	if !common.IsHexAddress(*hexAddressTo) {
 		return nil, nil, nil, nil, errors.New(strings.Join([]string{*hexAddressTo, "invalidate"}, " "))
 	}
+
 	var (
 		txFee = new(big.Int)
 		value = new(big.Int)
