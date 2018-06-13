@@ -161,7 +161,6 @@ func sendTxCmd(nodeClient *ethclient.Client) {
 		} else {
 			log.Infoln("send tx: ", *hash, "success")
 		}
-
 	}
 }
 
@@ -230,7 +229,7 @@ func signTx(txHex, fromAddressHex *string) (*string, *string, *string, *big.Int,
 
 func sendTx(signTxHex, to *string, nodeClient *ethclient.Client) (*string, error) {
 	signTx, _ := decodeTx(signTxHex)
-	if strings.ToLower(signTx.To().Hex()) != *to {
+	if strings.Compare(strings.ToLower(signTx.To().Hex()), *to) != 0 {
 		return nil, errors.New("decode tx and to field error")
 	}
 
