@@ -9,6 +9,7 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -65,8 +66,44 @@ func constructTxCmd() {
 	ormDB := ormBbAlias{dbConn()}
 	ormDB.DBMigrate()
 	defer ormDB.Close()
-
 	ormDB.csv2db()
+
+	nodeClient, err := ethclient.Dial(config.EthRPC)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	var subAddresses []*SubAddress
+	ormDB.Find(&subAddresses)
+	for _, subaddress := range subAddresses {
+		from, balance, pendingNonceAt, err := ormDB.addressWithAmount(nodeClient, subaddress.Address)
+		if err != nil {
+			log.Warnln(err.Error())
+			continue
+		}
+
+		if err := applyWithdrawAndConstructRawTx(balance, pendingNonceAt, nodeClient, from, &(config.To)); err != nil {
+			log.Warnln(err.Error())
+		}
+	}
+}
+
+func applyWithdrawAndConstructRawTx(balance *big.Int, nonce *uint64, client *ethclient.Client, from, to *string) error {
+	balanceDecimal, _ := decimal.NewFromString(balance.String())
+	ethFac, _ := decimal.NewFromString("0.000000000000000001")
+	amount := balanceDecimal.Mul(ethFac)
+	settingBalance := decimal.NewFromFloat(config.MaxBalance)
+	if amount.GreaterThan(settingBalance) {
+		fromHex, toHex, rawTxHex, value, err := constructTx(client, *nonce, balance, from, to)
+		if err != nil {
+			return errors.New(strings.Join([]string{"constructTx error", err.Error()}, " "))
+		}
+		if err := exportHexTx(fromHex, toHex, rawTxHex, value, nonce, false); err != nil {
+			return errors.New(strings.Join([]string{"sub address:", *from, "hased applied withdraw, but fail to export rawTxHex to ", config.RawTx, err.Error()}, " "))
+		}
+		return nil
+	}
+	return errors.New("balance not fit the configure")
 }
 
 func constructTx(nodeClient *ethclient.Client, nonce uint64, balance *big.Int, hexAddressFrom, hexAddressTo *string) (*string, *string, *string, *big.Int, error) {
@@ -96,8 +133,8 @@ func constructTx(nodeClient *ethclient.Client, nonce uint64, balance *big.Int, h
 	return hexAddressFrom, hexAddressTo, rawTxHex, value, nil
 }
 
-func decodeTx(txHex *string) (*types.Transaction, error) {
-	txc, err := hexutil.Decode(*txHex)
+func decodeTx(txHex string) (*types.Transaction, error) {
+	txc, err := hexutil.Decode(txHex)
 	if err != nil {
 		return nil, err
 	}
@@ -137,9 +174,9 @@ func signTxCmd() {
 		rawtxHex := tx.TxHex
 		fromHex := tx.From
 
-		from, to, signedTxHex, value, nonce, err := signTx(&rawtxHex, &fromHex)
+		from, to, signedTxHex, value, nonce, err := signTx(rawtxHex, fromHex)
 		if err != nil {
-			log.Errorln(strings.Join([]string{"sign tx from", *from, "error", err.Error()}, " "))
+			log.Errorln(strings.Join([]string{"sign tx from", fromHex, "error", err.Error()}, " "))
 			continue
 		}
 		if err := exportHexTx(from, to, signedTxHex, value, nonce, true); err != nil {
@@ -164,7 +201,7 @@ func sendTxCmd(nodeClient *ethclient.Client) {
 
 		signedTxHex := tx.TxHex
 		to := config.To
-		hash, err := sendTx(&signedTxHex, &to, nodeClient)
+		hash, err := sendTx(signedTxHex, to, nodeClient)
 		if err != nil {
 			log.Errorln("send tx: ", fileName, "fail", err.Error())
 		} else {
@@ -193,7 +230,7 @@ func readTxHex(fileName *string, signed bool) (*Tx, error) {
 	return &tx, nil
 }
 
-func signTx(txHex, fromAddressHex *string) (*string, *string, *string, *big.Int, *uint64, error) {
+func signTx(txHex, fromAddressHex string) (*string, *string, *string, *big.Int, *uint64, error) {
 	tx, err := decodeTx(txHex)
 	if err != nil {
 		return nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"decode tx error", err.Error()}, " "))
@@ -212,7 +249,7 @@ func signTx(txHex, fromAddressHex *string) (*string, *string, *string, *big.Int,
 	// 1337 Geth private chains (default)
 	var chainID *big.Int
 	switch config.NetMode {
-	case "private":
+	case "privatenet":
 		chainID = big.NewInt(1337)
 	case "mainnet":
 		chainID = big.NewInt(1)
@@ -236,9 +273,9 @@ func signTx(txHex, fromAddressHex *string) (*string, *string, *string, *big.Int,
 	return &from, &to, signTxHex, value, &nonce, nil
 }
 
-func sendTx(signTxHex, to *string, nodeClient *ethclient.Client) (*string, error) {
+func sendTx(signTxHex, to string, nodeClient *ethclient.Client) (*string, error) {
 	signTx, _ := decodeTx(signTxHex)
-	if strings.Compare(strings.ToLower(signTx.To().Hex()), *to) != 0 {
+	if strings.Compare(strings.ToLower(signTx.To().Hex()), strings.ToLower(to)) != 0 {
 		return nil, errors.New("decode tx and to field error")
 	}
 

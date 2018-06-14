@@ -304,16 +304,16 @@ func readKeyStore(address string) ([]byte, error) {
 	return ioutil.ReadFile(keystorefile)
 }
 
-func decodeKS2Key(addressHex *string) (*keystore.Key, error) {
-	keyjson, err := readKeyStore(*addressHex)
+func decodeKS2Key(addressHex string) (*keystore.Key, error) {
+	keyjson, err := readKeyStore(addressHex)
 	if err != nil {
 		return nil, errors.New(strings.Join([]string{"read keystore error", err.Error()}, " "))
 	}
-	fixedpwd, err := readPwd(*addressHex, "fixedpwd")
+	fixedpwd, err := readPwd(addressHex, "fixedpwd")
 	if err != nil {
 		return nil, errors.New(strings.Join([]string{"read fixedpwd error", err.Error()}, " "))
 	}
-	randompwd, _ := readPwd(*addressHex, "randompwd")
+	randompwd, _ := readPwd(addressHex, "randompwd")
 	if err != nil {
 		return nil, errors.New(strings.Join([]string{"read randompwd error", err.Error()}, " "))
 	}

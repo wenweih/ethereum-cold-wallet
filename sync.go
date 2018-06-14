@@ -4,13 +4,10 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"os"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/gocarina/gocsv"
 	"github.com/olivere/elastic"
 	log "github.com/sirupsen/logrus"
 )
@@ -144,26 +141,6 @@ type esContract struct {
 
 type esSubAddress struct {
 	Address string `json:"address"`
-}
-
-func csv2es(ctx context.Context, esClient *elastic.Client) {
-	esIndex(ctx, esClient, "eth_sub_address", subAddressMapping)
-
-	addressPath := strings.Join([]string{HomeDir(), "eth_address.csv"}, "/")
-	addressFile, err := os.OpenFile(addressPath, os.O_RDWR, os.ModePerm)
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-	defer addressFile.Close()
-
-	addresses := []*csvAddress{}
-	if err := gocsv.UnmarshalFile(addressFile, &addresses); err != nil {
-		log.Fatalln(err.Error())
-	}
-	for _, address := range addresses {
-		findOrCreateFromSubAddress(ctx, esClient, address)
-	}
-	log.Info("csv2es done")
 }
 
 func findOrCreateFromSubAddress(ctx context.Context, esClient *elastic.Client, address *csvAddress) {
