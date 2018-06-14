@@ -14,7 +14,7 @@ import (
 // SubAddress 监听地址
 type SubAddress struct {
 	gorm.Model
-	Address string `gorm:"type:varchar(100);not null;unique_index"`
+	Address string `gorm:"type:varchar(42);not null;unique_index"`
 }
 
 type ormBbAlias struct {
