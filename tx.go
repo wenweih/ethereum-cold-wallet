@@ -9,6 +9,7 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -25,15 +26,17 @@ type Tx struct {
 	TxHex string  `json:"txhex"`
 	Value big.Int `json:"value"`
 	Nonce uint64  `json:"nonce"`
+	Hash  string  `json:"hash"`
 }
 
-func exportHexTx(from, to, txHex *string, value *big.Int, nonce *uint64, signed bool) error {
+func exportHexTx(from, to, txHex, hash string, value *big.Int, nonce *uint64, signed bool) error {
 	tx := &Tx{
-		From:  *from,
-		To:    *to,
-		TxHex: *txHex,
+		From:  from,
+		To:    to,
+		TxHex: txHex,
 		Value: *value,
 		Nonce: *nonce,
+		Hash:  hash,
 	}
 
 	bTx, err := json.Marshal(tx)
@@ -41,36 +44,82 @@ func exportHexTx(from, to, txHex *string, value *big.Int, nonce *uint64, signed 
 		return err
 	}
 
-	var configurePath string
+	var configurePath, txFileName string
 	if signed {
 		configurePath = config.SignedTx
+		txFileName = strings.Join([]string{"signed_from", from, "json"}, ".")
 	} else {
 		configurePath = config.RawTx
+		txFileName = strings.Join([]string{"unsign_from", from, "json"}, ".")
 	}
 	TxPath, err := mkdirBySlice([]string{HomeDir(), configurePath})
 	if err != nil {
 		return errors.New(strings.Join([]string{"Could not create directory", err.Error()}, " "))
 	}
 
-	txFileName := strings.Join([]string{"from", *from, "json"}, ".")
 	txfile := strings.Join([]string{*TxPath, txFileName}, "/")
 	if err := ioutil.WriteFile(txfile, bTx, 0600); err != nil {
-		return errors.New(strings.Join([]string{"Failed to write keyfile to", err.Error()}, " "))
+		return errors.New(strings.Join([]string{"Failed to write tx to", err.Error()}, " "))
 	}
 	log.Infoln("Exported HexTx to", txfile)
 	return nil
 }
 
-func constructTx(nodeClient *ethclient.Client, nonce uint64, balance *big.Int, hexAddressFrom, hexAddressTo *string) (*string, *string, *string, *big.Int, error) {
+func constructTxCmd() {
+	ormDB := ormBbAlias{dbConn()}
+	ormDB.DBMigrate()
+	defer ormDB.Close()
+	ormDB.csv2db()
+
+	nodeClient, err := ethclient.Dial(config.EthRPC)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	var subAddresses []*SubAddress
+	ormDB.Find(&subAddresses)
+	for _, subaddress := range subAddresses {
+		from, balance, pendingNonceAt, err := ormDB.addressWithAmount(nodeClient, subaddress.Address)
+		if err != nil {
+			log.Warnln(err.Error())
+			continue
+		}
+
+		if err := applyWithdrawAndConstructRawTx(balance, pendingNonceAt, nodeClient, from, &(config.To)); err != nil {
+			log.Warnln(err.Error())
+		}
+	}
+}
+
+func applyWithdrawAndConstructRawTx(balance *big.Int, nonce *uint64, client *ethclient.Client, from, to *string) error {
+	balanceDecimal, _ := decimal.NewFromString(balance.String())
+	ethFac, _ := decimal.NewFromString("0.000000000000000001")
+	amount := balanceDecimal.Mul(ethFac)
+	settingBalance := decimal.NewFromFloat(config.MaxBalance)
+	if amount.GreaterThan(settingBalance) {
+		fromHex, toHex, rawTxHex, txHashHex, value, err := constructTx(client, *nonce, balance, from, to)
+		if err != nil {
+			return errors.New(strings.Join([]string{"constructTx error", err.Error()}, " "))
+		}
+		if err := exportHexTx(*fromHex, *toHex, *rawTxHex, *txHashHex, value, nonce, false); err != nil {
+			return errors.New(strings.Join([]string{"sub address:", *from, "hased applied withdraw, but fail to export rawTxHex to ", config.RawTx, err.Error()}, " "))
+		}
+		return nil
+	}
+	return errors.New("balance not fit the configure")
+}
+
+func constructTx(nodeClient *ethclient.Client, nonce uint64, balance *big.Int, hexAddressFrom, hexAddressTo *string) (*string, *string, *string, *string, *big.Int, error) {
 	gasLimit := uint64(21000) // in units
 	gasPrice, err := nodeClient.SuggestGasPrice(context.Background())
 	if err != nil {
-		return nil, nil, nil, nil, errors.New(strings.Join([]string{"get gasPrice error", err.Error()}, " "))
+		return nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"get gasPrice error", err.Error()}, " "))
 	}
 
 	if !common.IsHexAddress(*hexAddressTo) {
-		return nil, nil, nil, nil, errors.New(strings.Join([]string{*hexAddressTo, "invalidate"}, " "))
+		return nil, nil, nil, nil, nil, errors.New(strings.Join([]string{*hexAddressTo, "invalidate"}, " "))
 	}
+
 	var (
 		txFee = new(big.Int)
 		value = new(big.Int)
@@ -82,13 +131,14 @@ func constructTx(nodeClient *ethclient.Client, nonce uint64, balance *big.Int, h
 	tx := types.NewTransaction(nonce, common.HexToAddress(*hexAddressTo), value, gasLimit, gasPrice, nil)
 	rawTxHex, err := encodeTx(tx)
 	if err != nil {
-		return nil, nil, nil, nil, errors.New(strings.Join([]string{"encode raw tx error", err.Error()}, " "))
+		return nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"encode raw tx error", err.Error()}, " "))
 	}
-	return hexAddressFrom, hexAddressTo, rawTxHex, value, nil
+	txHashHex := tx.Hash().Hex()
+	return hexAddressFrom, hexAddressTo, rawTxHex, &txHashHex, value, nil
 }
 
-func decodeTx(txHex *string) (*types.Transaction, error) {
-	txc, err := hexutil.Decode(*txHex)
+func decodeTx(txHex string) (*types.Transaction, error) {
+	txc, err := hexutil.Decode(txHex)
 	if err != nil {
 		return nil, err
 	}
@@ -128,12 +178,12 @@ func signTxCmd() {
 		rawtxHex := tx.TxHex
 		fromHex := tx.From
 
-		from, to, signedTxHex, value, nonce, err := signTx(&rawtxHex, &fromHex)
+		from, to, signedTxHex, hash, value, nonce, err := signTx(rawtxHex, fromHex)
 		if err != nil {
-			log.Errorln(strings.Join([]string{"sign tx from", *from, "error", err.Error()}, " "))
+			log.Errorln(strings.Join([]string{"sign tx from", fromHex, "error", err.Error()}, " "))
 			continue
 		}
-		if err := exportHexTx(from, to, signedTxHex, value, nonce, true); err != nil {
+		if err := exportHexTx(*from, *to, *signedTxHex, *hash, value, nonce, true); err != nil {
 			log.Errorln(strings.Join([]string{"export signed tx hex to", fileName, "error, issue by address:", *from, err.Error()}, " "))
 			continue
 		}
@@ -155,7 +205,7 @@ func sendTxCmd(nodeClient *ethclient.Client) {
 
 		signedTxHex := tx.TxHex
 		to := config.To
-		hash, err := sendTx(&signedTxHex, &to, nodeClient)
+		hash, err := sendTx(signedTxHex, to, nodeClient)
 		if err != nil {
 			log.Errorln("send tx: ", fileName, "fail", err.Error())
 		} else {
@@ -184,15 +234,15 @@ func readTxHex(fileName *string, signed bool) (*Tx, error) {
 	return &tx, nil
 }
 
-func signTx(txHex, fromAddressHex *string) (*string, *string, *string, *big.Int, *uint64, error) {
+func signTx(txHex, fromAddressHex string) (*string, *string, *string, *string, *big.Int, *uint64, error) {
 	tx, err := decodeTx(txHex)
 	if err != nil {
-		return nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"decode tx error", err.Error()}, " "))
+		return nil, nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"decode tx error", err.Error()}, " "))
 	}
 
 	key, err := decodeKS2Key(fromAddressHex)
 	if err != nil {
-		return nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"decode keystore to key error", err.Error()}, " "))
+		return nil, nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"decode keystore to key error", err.Error()}, " "))
 	}
 
 	// https://github.com/ethereum/EIPs/blob/master/EIPS/eip-155.md
@@ -203,20 +253,20 @@ func signTx(txHex, fromAddressHex *string) (*string, *string, *string, *big.Int,
 	// 1337 Geth private chains (default)
 	var chainID *big.Int
 	switch config.NetMode {
-	case "private":
+	case "privatenet":
 		chainID = big.NewInt(1337)
 	case "mainnet":
 		chainID = big.NewInt(1)
 	default:
-		return nil, nil, nil, nil, nil, errors.New("you must set net_mode in configure")
+		return nil, nil, nil, nil, nil, nil, errors.New("you must set net_mode in configure")
 	}
 	signtx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), key.PrivateKey)
 	if err != nil {
-		return nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"sign tx error", err.Error()}, " "))
+		return nil, nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"sign tx error", err.Error()}, " "))
 	}
 	msg, err := signtx.AsMessage(types.NewEIP155Signer(chainID))
 	if err != nil {
-		return nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"tx to msg error", err.Error()}, " "))
+		return nil, nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"tx to msg error", err.Error()}, " "))
 	}
 
 	from := msg.From().Hex()
@@ -224,12 +274,13 @@ func signTx(txHex, fromAddressHex *string) (*string, *string, *string, *big.Int,
 	value := msg.Value()
 	nonce := msg.Nonce()
 	signTxHex, err := encodeTx(signtx)
-	return &from, &to, signTxHex, value, &nonce, nil
+	hash := signtx.Hash().Hex()
+	return &from, &to, signTxHex, &hash, value, &nonce, nil
 }
 
-func sendTx(signTxHex, to *string, nodeClient *ethclient.Client) (*string, error) {
+func sendTx(signTxHex, to string, nodeClient *ethclient.Client) (*string, error) {
 	signTx, _ := decodeTx(signTxHex)
-	if strings.Compare(strings.ToLower(signTx.To().Hex()), *to) != 0 {
+	if strings.Compare(strings.ToLower(signTx.To().Hex()), strings.ToLower(to)) != 0 {
 		return nil, errors.New("decode tx and to field error")
 	}
 
