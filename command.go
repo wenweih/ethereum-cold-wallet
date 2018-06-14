@@ -41,7 +41,7 @@ var genAccountCmd = &cobra.Command{
 	Use:   "genaccount",
 	Short: "Generate ethereum account",
 	Run: func(cmd *cobra.Command, args []string) {
-		fixedPwd, err := promptUtil()
+		fixedPwd, err := promptPwd()
 		if err != nil {
 			return
 		}

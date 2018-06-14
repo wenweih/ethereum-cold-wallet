@@ -173,14 +173,12 @@ func signTxCmd() {
 		tx, err := readTxHex(&fileName, false)
 		if err != nil {
 			log.Errorln(err.Error())
+			continue
 		}
 
-		rawtxHex := tx.TxHex
-		fromHex := tx.From
-
-		from, to, signedTxHex, hash, value, nonce, err := signTx(rawtxHex, fromHex)
+		from, to, signedTxHex, hash, value, nonce, err := signTx(tx)
 		if err != nil {
-			log.Errorln(strings.Join([]string{"sign tx from", fromHex, "error", err.Error()}, " "))
+			log.Errorln(strings.Join([]string{"sign tx from", tx.From, "error", err.Error()}, " "))
 			continue
 		}
 		if err := exportHexTx(*from, *to, *signedTxHex, *hash, value, nonce, true); err != nil {
@@ -188,6 +186,58 @@ func signTxCmd() {
 			continue
 		}
 	}
+}
+
+func signTx(simpletx *Tx) (*string, *string, *string, *string, *big.Int, *uint64, error) {
+	txHex := simpletx.TxHex
+	fromAddressHex := simpletx.From
+	tx, err := decodeTx(txHex)
+	if err != nil {
+		return nil, nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"decode tx error", err.Error()}, " "))
+	}
+
+	if strings.Compare(strings.ToLower(tx.To().Hex()), strings.ToLower(config.To)) != 0 {
+		return nil, nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"unsign tx to field:", tx.To().Hex(), "can't match configure to:", config.To}, " "))
+	}
+
+	promptSign(tx.To().Hex())
+
+	key, err := decodeKS2Key(fromAddressHex)
+	if err != nil {
+		return nil, nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"decode keystore to key error", err.Error()}, " "))
+	}
+
+	// https://github.com/ethereum/EIPs/blob/master/EIPS/eip-155.md
+	// chain id
+	// 1 Ethereum mainnet
+	// 61 Ethereum Classic mainnet
+	// 62 Ethereum Classic testnet
+	// 1337 Geth private chains (default)
+	var chainID *big.Int
+	switch config.NetMode {
+	case "privatenet":
+		chainID = big.NewInt(1337)
+	case "mainnet":
+		chainID = big.NewInt(1)
+	default:
+		return nil, nil, nil, nil, nil, nil, errors.New("you must set net_mode in configure")
+	}
+	signtx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), key.PrivateKey)
+	if err != nil {
+		return nil, nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"sign tx error", err.Error()}, " "))
+	}
+	msg, err := signtx.AsMessage(types.NewEIP155Signer(chainID))
+	if err != nil {
+		return nil, nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"tx to msg error", err.Error()}, " "))
+	}
+
+	from := msg.From().Hex()
+	to := msg.To().Hex()
+	value := msg.Value()
+	nonce := msg.Nonce()
+	signTxHex, err := encodeTx(signtx)
+	hash := signtx.Hash().Hex()
+	return &from, &to, signTxHex, &hash, value, &nonce, nil
 }
 
 func sendTxCmd(nodeClient *ethclient.Client) {
@@ -232,50 +282,6 @@ func readTxHex(fileName *string, signed bool) (*Tx, error) {
 		return nil, errors.New(strings.Join([]string{"can't Unmarshal", filePath, "to RawTx struct"}, " "))
 	}
 	return &tx, nil
-}
-
-func signTx(txHex, fromAddressHex string) (*string, *string, *string, *string, *big.Int, *uint64, error) {
-	tx, err := decodeTx(txHex)
-	if err != nil {
-		return nil, nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"decode tx error", err.Error()}, " "))
-	}
-
-	key, err := decodeKS2Key(fromAddressHex)
-	if err != nil {
-		return nil, nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"decode keystore to key error", err.Error()}, " "))
-	}
-
-	// https://github.com/ethereum/EIPs/blob/master/EIPS/eip-155.md
-	// chain id
-	// 1 Ethereum mainnet
-	// 61 Ethereum Classic mainnet
-	// 62 Ethereum Classic testnet
-	// 1337 Geth private chains (default)
-	var chainID *big.Int
-	switch config.NetMode {
-	case "privatenet":
-		chainID = big.NewInt(1337)
-	case "mainnet":
-		chainID = big.NewInt(1)
-	default:
-		return nil, nil, nil, nil, nil, nil, errors.New("you must set net_mode in configure")
-	}
-	signtx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), key.PrivateKey)
-	if err != nil {
-		return nil, nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"sign tx error", err.Error()}, " "))
-	}
-	msg, err := signtx.AsMessage(types.NewEIP155Signer(chainID))
-	if err != nil {
-		return nil, nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"tx to msg error", err.Error()}, " "))
-	}
-
-	from := msg.From().Hex()
-	to := msg.To().Hex()
-	value := msg.Value()
-	nonce := msg.Nonce()
-	signTxHex, err := encodeTx(signtx)
-	hash := signtx.Hash().Hex()
-	return &from, &to, signTxHex, &hash, value, &nonce, nil
 }
 
 func sendTx(signTxHex, to string, nodeClient *ethclient.Client) (*string, error) {

@@ -43,7 +43,7 @@ func initLogger() {
 	}
 }
 
-func promptUtil() (*string, error) {
+func promptPwd() (*string, error) {
 	promptOne := promptui.Prompt{
 		Label: "Password",
 		Mask:  '*',
@@ -74,6 +74,21 @@ func promptUtil() (*string, error) {
 		return nil, err
 	}
 	return &resultTwo, nil
+}
+
+func promptSign(to string) (*string, error) {
+	prompt := promptui.Prompt{
+		Label:     strings.Join([]string{"确认转出地址是否为配置地址：", to}, " "),
+		IsConfirm: true,
+	}
+
+	result, err := prompt.Run()
+	if err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		return nil, err
+	}
+
+	return &result, nil
 }
 
 // RandStringBytesMaskImprSrc 随机数
