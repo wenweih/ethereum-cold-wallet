@@ -62,7 +62,11 @@ func exportHexTx(from, to, txHex *string, value *big.Int, nonce *uint64, signed 
 }
 
 func constructTxCmd() {
+	ormDB := ormBbAlias{dbConn()}
+	ormDB.DBMigrate()
+	defer ormDB.Close()
 
+	ormDB.csv2db()
 }
 
 func constructTx(nodeClient *ethclient.Client, nonce uint64, balance *big.Int, hexAddressFrom, hexAddressTo *string) (*string, *string, *string, *big.Int, error) {
