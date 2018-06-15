@@ -38,6 +38,12 @@
   version = "v1.4.7"
 
 [[projects]]
+  name = "github.com/go-sql-driver/mysql"
+  packages = ["."]
+  revision = "d523deb1b23d913de5bdada721a6071e71283618"
+  version = "v1.4.0"
+
+[[projects]]
   name = "github.com/go-stack/stack"
   packages = ["."]
   revision = "259ab82a6cad3992b4e21ff5cac294ccb06474bc"
@@ -69,7 +75,7 @@
 
 [[projects]]
   name = "github.com/jinzhu/gorm"
-  packages = ["."]
+  packages = [".","dialects/mysql"]
   revision = "6ed508ec6a4ecb3531899a69cbc746ccf65a4166"
   version = "v1.9.1"
 
@@ -134,10 +140,22 @@
   revision = "bb74f1db0675b241733089d5a1faa5dd8b0ef57b"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/moul/http2curl"
+  packages = ["."]
+  revision = "9ac6cf4d929b2fa8fd2d2e6dec5bb0feb4f4911d"
+
+[[projects]]
   name = "github.com/olivere/elastic"
   packages = [".","config","uritemplates"]
   revision = "dabcc5de0a3fd6313870c223c3119e2b1e942ba3"
   version = "v6.1.23"
+
+[[projects]]
+  name = "github.com/parnurzeal/gorequest"
+  packages = ["."]
+  revision = "a578a48e8d6ca8b01a3b18314c43c6716bb5f5a3"
+  version = "v0.2.15"
 
 [[projects]]
   name = "github.com/pborman/uuid"
@@ -238,7 +256,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["websocket"]
+  packages = ["idna","publicsuffix","websocket"]
   revision = "1e491301e022f8f977054da4c2d852decd59571f"
 
 [[projects]]
@@ -249,9 +267,15 @@
 
 [[projects]]
   name = "golang.org/x/text"
-  packages = ["internal/gen","internal/triegen","internal/ucd","transform","unicode/cldr","unicode/norm"]
+  packages = ["collate","collate/build","internal/colltab","internal/gen","internal/tag","internal/triegen","internal/ucd","language","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
   revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
   version = "v0.3.0"
+
+[[projects]]
+  name = "google.golang.org/appengine"
+  packages = ["cloudsql"]
+  revision = "150dc57a1b433e64154302bdc40b6bb8aefa313a"
+  version = "v1.0.0"
 
 [[projects]]
   name = "gopkg.in/fatih/set.v0"
@@ -280,6 +304,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6a44ab474e8825cf2dcd4cca930ce36a9a8c46405cb5df813e928a843c64619a"
+  inputs-digest = "e73a54789984197e930517b645a33e636ef8ddf14f053a7eb1f67a44a527b102"
   solver-name = "gps-cdcl"
   solver-version = 1
