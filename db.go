@@ -2,14 +2,11 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"math/big"
 	"os"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/gocarina/gocsv"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
@@ -65,63 +62,29 @@ func (db ormBbAlias) csv2db() {
 	log.Info("csv2db done")
 }
 
-func (db ormBbAlias) addressWithAmountFromNode(address string) (*string, *big.Int, *uint64, error) {
+func (db ormBbAlias) constructTxField(address string) (*string, *big.Int, *uint64, *big.Int, error) {
 	subAddress, err := db.getSubAddress(address)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	switch node {
 	case "geth":
-		balance, nonce, err := balanceAndNonce("geth", *subAddress)
+		balance, nonce, gasPrice, err := constructTxField("geth", *subAddress)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, nil, err
 		}
-		return subAddress, balance, nonce, nil
+		return subAddress, balance, nonce, gasPrice, nil
 	case "parity":
-		balance, nonce, err := balanceAndNonce("parity", *subAddress)
+		balance, nonce, gasPrice, err := constructTxField("parity", *subAddress)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, nil, err
 		}
-		return subAddress, balance, nonce, nil
+		return subAddress, balance, nonce, gasPrice, nil
 	case "etherscan":
 	}
 
-	return nil, nil, nil, errors.New("addressWithAmountFromNode error")
-}
-
-func balanceAndNonce(node, address string) (*big.Int, *uint64, error) {
-	var nodeConfig string
-	if node == "geth" {
-		nodeConfig = config.GethRPC
-	} else if node == "parity" {
-		nodeConfig = config.ParityRPC
-	}
-
-	client, err := ethclient.Dial(nodeConfig)
-	if err != nil {
-		return nil, nil, errors.New(strings.Join([]string{"node error", err.Error()}, " "))
-	}
-	balance, nonce, err := getBalanceAndPendingNonceAt(client, address)
-	if err != nil {
-		return nil, nil, errors.New(strings.Join([]string{"geth error", err.Error()}, " "))
-	}
-	return balance, nonce, nil
-}
-
-func getBalanceAndPendingNonceAt(node *ethclient.Client, address string) (*big.Int, *uint64, error) {
-	balance, err := node.BalanceAt(context.Background(), common.HexToAddress(address), nil)
-	if err != nil {
-		return nil, nil, errors.New(strings.Join([]string{"Failed to get ethereum balance from address:", address, err.Error()}, " "))
-	}
-
-	pendingNonceAt, err := node.PendingNonceAt(context.Background(), common.HexToAddress(address))
-	if err != nil {
-		return nil, nil, errors.New(strings.Join([]string{"Failed to get ethereum nonce from address:", address, err.Error()}, " "))
-	}
-
-	return balance, &pendingNonceAt, nil
-
+	return nil, nil, nil, nil, errors.New("addressWithAmountFromNode error")
 }
 
 func (db ormBbAlias) getSubAddress(address string) (*string, error) {

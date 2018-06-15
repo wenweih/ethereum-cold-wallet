@@ -71,53 +71,44 @@ func constructTxCmd() {
 	defer ormDB.Close()
 	ormDB.csv2db()
 
-	nodeClient, err := ethclient.Dial(config.EthRPC)
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-
 	var subAddresses []*SubAddress
 	ormDB.Find(&subAddresses)
 	for _, subaddress := range subAddresses {
-		from, balance, pendingNonceAt, err := ormDB.addressWithAmountFromNode(subaddress.Address)
+		from, balance, pendingNonceAt, gasPrice, err := ormDB.constructTxField(subaddress.Address)
 		if err != nil {
 			log.Warnln(err.Error())
 			continue
 		}
 
-		if err := applyWithdrawAndConstructRawTx(balance, pendingNonceAt, nodeClient, from, &(config.To)); err != nil {
+		if err := applyWithdrawAndConstructRawTx(balance, gasPrice, pendingNonceAt, *from, config.To); err != nil {
 			log.Warnln(err.Error())
 		}
 	}
 }
 
-func applyWithdrawAndConstructRawTx(balance *big.Int, nonce *uint64, client *ethclient.Client, from, to *string) error {
+func applyWithdrawAndConstructRawTx(balance, gasPrice *big.Int, nonce *uint64, from, to string) error {
 	balanceDecimal, _ := decimal.NewFromString(balance.String())
 	ethFac, _ := decimal.NewFromString("0.000000000000000001")
 	amount := balanceDecimal.Mul(ethFac)
 	settingBalance := decimal.NewFromFloat(config.MaxBalance)
 	if amount.GreaterThan(settingBalance) {
-		fromHex, toHex, rawTxHex, txHashHex, value, err := constructTx(client, *nonce, balance, from, to)
+		fromHex, toHex, rawTxHex, txHashHex, value, err := constructTx(*nonce, balance, gasPrice, from, to)
 		if err != nil {
 			return errors.New(strings.Join([]string{"constructTx error", err.Error()}, " "))
 		}
 		if err := exportHexTx(*fromHex, *toHex, *rawTxHex, *txHashHex, value, nonce, false); err != nil {
-			return errors.New(strings.Join([]string{"sub address:", *from, "hased applied withdraw, but fail to export rawTxHex to ", config.RawTx, err.Error()}, " "))
+			return errors.New(strings.Join([]string{"sub address:", from, "hased applied withdraw, but fail to export rawTxHex to ", config.RawTx, err.Error()}, " "))
 		}
 		return nil
 	}
 	return errors.New("balance not fit the configure")
 }
 
-func constructTx(nodeClient *ethclient.Client, nonce uint64, balance *big.Int, hexAddressFrom, hexAddressTo *string) (*string, *string, *string, *string, *big.Int, error) {
+func constructTx(nonce uint64, balance, gasPrice *big.Int, hexAddressFrom, hexAddressTo string) (*string, *string, *string, *string, *big.Int, error) {
 	gasLimit := uint64(21000) // in units
-	gasPrice, err := nodeClient.SuggestGasPrice(context.Background())
-	if err != nil {
-		return nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"get gasPrice error", err.Error()}, " "))
-	}
 
-	if !common.IsHexAddress(*hexAddressTo) {
-		return nil, nil, nil, nil, nil, errors.New(strings.Join([]string{*hexAddressTo, "invalidate"}, " "))
+	if !common.IsHexAddress(hexAddressTo) {
+		return nil, nil, nil, nil, nil, errors.New(strings.Join([]string{hexAddressTo, "invalidate"}, " "))
 	}
 
 	var (
@@ -128,13 +119,46 @@ func constructTx(nodeClient *ethclient.Client, nonce uint64, balance *big.Int, h
 	txFee = txFee.Mul(gasPrice, big.NewInt(int64(gasLimit)))
 	value = value.Sub(balance, txFee)
 
-	tx := types.NewTransaction(nonce, common.HexToAddress(*hexAddressTo), value, gasLimit, gasPrice, nil)
+	tx := types.NewTransaction(nonce, common.HexToAddress(hexAddressTo), value, gasLimit, gasPrice, nil)
 	rawTxHex, err := encodeTx(tx)
 	if err != nil {
 		return nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"encode raw tx error", err.Error()}, " "))
 	}
 	txHashHex := tx.Hash().Hex()
-	return hexAddressFrom, hexAddressTo, rawTxHex, &txHashHex, value, nil
+	return &hexAddressFrom, &hexAddressTo, rawTxHex, &txHashHex, value, nil
+}
+
+func constructTxField(node, address string) (*big.Int, *uint64, *big.Int, error) {
+	client, err := nodeClient(node)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	balance, nonce, gasPrice, err := getBalanceAndPendingNonceAtAndGasPrice(client, address)
+	if err != nil {
+		return nil, nil, nil, errors.New(strings.Join([]string{"geth error", err.Error()}, " "))
+	}
+	return balance, nonce, gasPrice, nil
+}
+
+func getBalanceAndPendingNonceAtAndGasPrice(node *ethclient.Client, address string) (*big.Int, *uint64, *big.Int, error) {
+	ctx := context.Background()
+	balance, err := node.BalanceAt(ctx, common.HexToAddress(address), nil)
+	if err != nil {
+		return nil, nil, nil, errors.New(strings.Join([]string{"Failed to get ethereum balance from address:", address, err.Error()}, " "))
+	}
+
+	pendingNonceAt, err := node.PendingNonceAt(ctx, common.HexToAddress(address))
+	if err != nil {
+		return nil, nil, nil, errors.New(strings.Join([]string{"Failed to get ethereum nonce from address:", address, err.Error()}, " "))
+	}
+
+	gasPrice, err := node.SuggestGasPrice(ctx)
+	if err != nil {
+		return nil, nil, nil, errors.New(strings.Join([]string{"get gasPrice error", err.Error()}, " "))
+	}
+
+	return balance, &pendingNonceAt, gasPrice, nil
+
 }
 
 func decodeTx(txHex string) (*types.Transaction, error) {

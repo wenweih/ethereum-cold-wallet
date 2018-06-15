@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/manifoldco/promptui"
 	homedir "github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
@@ -116,6 +117,21 @@ func RandStringBytesMaskImprSrc(n int) string {
 	}
 
 	return string(b)
+}
+
+func nodeClient(node string) (*ethclient.Client, error) {
+	var nodeConfig string
+	if node == "geth" {
+		nodeConfig = config.GethRPC
+	} else if node == "parity" {
+		nodeConfig = config.ParityRPC
+	}
+
+	client, err := ethclient.Dial(nodeConfig)
+	if err != nil {
+		return nil, errors.New(strings.Join([]string{"node error", err.Error()}, " "))
+	}
+	return client, nil
 }
 
 func appenFile(filename string, data []byte, perm os.FileMode) error {
