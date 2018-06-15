@@ -11,7 +11,8 @@ import (
 )
 
 var (
-	number int
+	number   int
+	externel string
 )
 
 type configure struct {
@@ -170,4 +171,6 @@ func init() {
 	// rootCmd.AddCommand(syncCmd)
 	genAccountCmd.Flags().IntVarP(&number, "number", "n", 10, "Generate ethereum accounts")
 	genAccountCmd.MarkFlagRequired("number")
+
+	constructCmd.Flags().StringVarP(&externel, "externel", "e", "etherscan", "Etherscan API")
 }
