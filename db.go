@@ -65,19 +65,63 @@ func (db ormBbAlias) csv2db() {
 	log.Info("csv2db done")
 }
 
-func (db ormBbAlias) addressWithAmountFromNode(nodeclient *ethclient.Client, address string) (*string, *big.Int, *uint64, error) {
+func (db ormBbAlias) addressWithAmountFromNode(address string) (*string, *big.Int, *uint64, error) {
 	subAddress, err := db.getSubAddress(address)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	balance, err := nodeclient.BalanceAt(context.Background(), common.HexToAddress(*subAddress), nil)
-	if err != nil {
-		return nil, nil, nil, errors.New(strings.Join([]string{"Failed to get ethereum balance from address:", *subAddress, err.Error()}, " "))
+
+	switch node {
+	case "geth":
+		balance, nonce, err := balanceAndNonce("geth", *subAddress)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		return subAddress, balance, nonce, nil
+	case "parity":
+		balance, nonce, err := balanceAndNonce("parity", *subAddress)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		return subAddress, balance, nonce, nil
+	case "etherscan":
 	}
 
-	pendingNonceAt, _ := nodeclient.PendingNonceAt(context.Background(), common.HexToAddress(*subAddress))
+	return nil, nil, nil, errors.New("addressWithAmountFromNode error")
+}
 
-	return subAddress, balance, &pendingNonceAt, nil
+func balanceAndNonce(node, address string) (*big.Int, *uint64, error) {
+	var nodeConfig string
+	if node == "geth" {
+		nodeConfig = config.GethRPC
+	} else if node == "parity" {
+		nodeConfig = config.ParityRPC
+	}
+
+	client, err := ethclient.Dial(nodeConfig)
+	if err != nil {
+		return nil, nil, errors.New(strings.Join([]string{"node error", err.Error()}, " "))
+	}
+	balance, nonce, err := getBalanceAndPendingNonceAt(client, address)
+	if err != nil {
+		return nil, nil, errors.New(strings.Join([]string{"geth error", err.Error()}, " "))
+	}
+	return balance, nonce, nil
+}
+
+func getBalanceAndPendingNonceAt(node *ethclient.Client, address string) (*big.Int, *uint64, error) {
+	balance, err := node.BalanceAt(context.Background(), common.HexToAddress(address), nil)
+	if err != nil {
+		return nil, nil, errors.New(strings.Join([]string{"Failed to get ethereum balance from address:", address, err.Error()}, " "))
+	}
+
+	pendingNonceAt, err := node.PendingNonceAt(context.Background(), common.HexToAddress(address))
+	if err != nil {
+		return nil, nil, errors.New(strings.Join([]string{"Failed to get ethereum nonce from address:", address, err.Error()}, " "))
+	}
+
+	return balance, &pendingNonceAt, nil
+
 }
 
 func (db ormBbAlias) getSubAddress(address string) (*string, error) {

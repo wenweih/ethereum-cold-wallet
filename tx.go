@@ -79,7 +79,7 @@ func constructTxCmd() {
 	var subAddresses []*SubAddress
 	ormDB.Find(&subAddresses)
 	for _, subaddress := range subAddresses {
-		from, balance, pendingNonceAt, err := ormDB.addressWithAmountFromNode(nodeClient, subaddress.Address)
+		from, balance, pendingNonceAt, err := ormDB.addressWithAmountFromNode(subaddress.Address)
 		if err != nil {
 			log.Warnln(err.Error())
 			continue

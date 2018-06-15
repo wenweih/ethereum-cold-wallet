@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	number   int
-	externel string
+	number int
+	node   string
 )
 
 type configure struct {
@@ -29,6 +29,9 @@ type configure struct {
 	RawTx        string
 	SignedTx     string
 	DB           string
+	GethRPC      string
+	ParityRPC    string
+	EtherscanRPC string
 }
 
 // rootCmd represents the base command when called without any subcommands
@@ -155,6 +158,12 @@ func (conf *configure) InitConfig() {
 			conf.SignedTx = value.(string)
 		case "db_mysql":
 			conf.DB = value.(string)
+		case "geth_rpc":
+			conf.GethRPC = value.(string)
+		case "parity_rpc":
+			conf.ParityRPC = value.(string)
+		case "etherscan_api":
+			conf.EtherscanRPC = value.(string)
 		}
 	}
 }
@@ -172,5 +181,6 @@ func init() {
 	genAccountCmd.Flags().IntVarP(&number, "number", "n", 10, "Generate ethereum accounts")
 	genAccountCmd.MarkFlagRequired("number")
 
-	constructCmd.Flags().StringVarP(&externel, "externel", "e", "etherscan", "Etherscan API")
+	constructCmd.Flags().StringVarP(&node, "node", "n", "parity", "Ethereum node type, support geth, parity, etherscan")
+	constructCmd.MarkFlagRequired("node")
 }
