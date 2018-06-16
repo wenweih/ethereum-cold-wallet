@@ -70,21 +70,26 @@ func (db ormBbAlias) constructTxField(address string) (*string, *big.Int, *uint6
 
 	switch node {
 	case "geth":
-		balance, nonce, gasPrice, err := constructTxField("geth", *subAddress)
+		balance, nonce, gasPrice, err := nodeConstructTxField("geth", *subAddress)
 		if err != nil {
 			return nil, nil, nil, nil, err
 		}
 		return subAddress, balance, nonce, gasPrice, nil
 	case "parity":
-		balance, nonce, gasPrice, err := constructTxField("parity", *subAddress)
+		balance, nonce, gasPrice, err := nodeConstructTxField("parity", *subAddress)
 		if err != nil {
 			return nil, nil, nil, nil, err
 		}
 		return subAddress, balance, nonce, gasPrice, nil
 	case "etherscan":
+		balance, nonce, gasPrice, err := etherscan.etherscanConstructTxField(*subAddress)
+		if err != nil {
+			return nil, nil, nil, nil, err
+		}
+		return subAddress, balance, nonce, gasPrice, nil
+	default:
+		return nil, nil, nil, nil, errors.New("Only support geth, parity, etherscan")
 	}
-
-	return nil, nil, nil, nil, errors.New("addressWithAmountFromNode error")
 }
 
 func (db ormBbAlias) getSubAddress(address string) (*string, error) {

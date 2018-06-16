@@ -9,7 +9,6 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -87,21 +86,18 @@ func constructTxCmd() {
 }
 
 func applyWithdrawAndConstructRawTx(balance, gasPrice *big.Int, nonce *uint64, from, to string) error {
-	balanceDecimal, _ := decimal.NewFromString(balance.String())
-	ethFac, _ := decimal.NewFromString("0.000000000000000001")
-	amount := balanceDecimal.Mul(ethFac)
-	settingBalance := decimal.NewFromFloat(config.MaxBalance)
-	if amount.GreaterThan(settingBalance) {
-		fromHex, toHex, rawTxHex, txHashHex, value, err := constructTx(*nonce, balance, gasPrice, from, to)
-		if err != nil {
-			return errors.New(strings.Join([]string{"constructTx error", err.Error()}, " "))
-		}
-		if err := exportHexTx(*fromHex, *toHex, *rawTxHex, *txHashHex, value, nonce, false); err != nil {
-			return errors.New(strings.Join([]string{"sub address:", from, "hased applied withdraw, but fail to export rawTxHex to ", config.RawTx, err.Error()}, " "))
-		}
-		return nil
+	if err := balanceIsLessThanConfig(from, balance); err != nil {
+		return err
 	}
-	return errors.New("balance not fit the configure")
+
+	fromHex, toHex, rawTxHex, txHashHex, value, err := constructTx(*nonce, balance, gasPrice, from, to)
+	if err != nil {
+		return errors.New(strings.Join([]string{"constructTx error", err.Error()}, " "))
+	}
+	if err := exportHexTx(*fromHex, *toHex, *rawTxHex, *txHashHex, value, nonce, false); err != nil {
+		return errors.New(strings.Join([]string{"sub address:", from, "hased applied withdraw, but fail to export rawTxHex to ", config.RawTx, err.Error()}, " "))
+	}
+	return nil
 }
 
 func constructTx(nonce uint64, balance, gasPrice *big.Int, hexAddressFrom, hexAddressTo string) (*string, *string, *string, *string, *big.Int, error) {
@@ -128,14 +124,14 @@ func constructTx(nonce uint64, balance, gasPrice *big.Int, hexAddressFrom, hexAd
 	return &hexAddressFrom, &hexAddressTo, rawTxHex, &txHashHex, value, nil
 }
 
-func constructTxField(node, address string) (*big.Int, *uint64, *big.Int, error) {
+func nodeConstructTxField(node, address string) (*big.Int, *uint64, *big.Int, error) {
 	client, err := nodeClient(node)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 	balance, nonce, gasPrice, err := getBalanceAndPendingNonceAtAndGasPrice(client, address)
 	if err != nil {
-		return nil, nil, nil, errors.New(strings.Join([]string{"geth error", err.Error()}, " "))
+		return nil, nil, nil, err
 	}
 	return balance, nonce, gasPrice, nil
 }
@@ -147,9 +143,13 @@ func getBalanceAndPendingNonceAtAndGasPrice(node *ethclient.Client, address stri
 		return nil, nil, nil, errors.New(strings.Join([]string{"Failed to get ethereum balance from address:", address, err.Error()}, " "))
 	}
 
+	if err := balanceIsLessThanConfig(address, balance); err != nil {
+		return nil, nil, nil, err
+	}
+
 	pendingNonceAt, err := node.PendingNonceAt(ctx, common.HexToAddress(address))
 	if err != nil {
-		return nil, nil, nil, errors.New(strings.Join([]string{"Failed to get ethereum nonce from address:", address, err.Error()}, " "))
+		return nil, nil, nil, errors.New(strings.Join([]string{"Failed to get account nonce from address:", address, err.Error()}, " "))
 	}
 
 	gasPrice, err := node.SuggestGasPrice(ctx)

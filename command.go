@@ -15,6 +15,12 @@ var (
 	node   string
 )
 
+// EtherScan 配置
+type EtherScan struct {
+	Key string
+	URL string
+}
+
 type configure struct {
 	Keystore     string
 	RandomPwd    string
@@ -162,14 +168,23 @@ func (conf *configure) InitConfig() {
 			conf.GethRPC = value.(string)
 		case "parity_rpc":
 			conf.ParityRPC = value.(string)
-		case "etherscan_api":
-			conf.EtherscanRPC = value.(string)
+		case "etherscan_rpc":
+			subv := viper.Sub("etherscan_rpc")
+			for subKey, subValue := range subv.AllSettings() {
+				switch subKey {
+				case "key":
+					etherscan.Key = subValue.(string)
+				case "url":
+					etherscan.URL = subValue.(string)
+				}
+			}
 		}
 	}
 }
 
 func init() {
 	config = new(configure)
+	etherscan = new(EtherScan)
 	config.InitConfig()
 	initLogger()
 	rootCmd.AddCommand(genAccountCmd)

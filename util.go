@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/big"
 	"math/rand"
 	"os"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/manifoldco/promptui"
 	homedir "github.com/mitchellh/go-homedir"
+	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -132,6 +134,17 @@ func nodeClient(node string) (*ethclient.Client, error) {
 		return nil, errors.New(strings.Join([]string{"node error", err.Error()}, " "))
 	}
 	return client, nil
+}
+
+func balanceIsLessThanConfig(address string, balance *big.Int) error {
+	balanceDecimal, _ := decimal.NewFromString(balance.String())
+	ethFac, _ := decimal.NewFromString("0.000000000000000001")
+	amount := balanceDecimal.Mul(ethFac)
+	settingBalance := decimal.NewFromFloat(config.MaxBalance)
+	if amount.LessThan(settingBalance) {
+		return errors.New(strings.Join([]string{"Ignore:", address, "balance not great than the configure amount"}, " "))
+	}
+	return nil
 }
 
 func appenFile(filename string, data []byte, perm os.FileMode) error {

@@ -1,7 +1,8 @@
 package main
 
 var (
-	config *configure
+	config    *configure
+	etherscan *EtherScan
 )
 
 func main() {
