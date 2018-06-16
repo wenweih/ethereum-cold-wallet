@@ -88,6 +88,10 @@ var constructCmd = &cobra.Command{
 	Use:   "construct",
 	Short: "construct transactio",
 	Run: func(cmd *cobra.Command, args []string) {
+		if !Contains([]string{"geth", "parity", "etherscan"}, node) {
+			log.Errorln("Only support geth, parity, etherscan")
+			return
+		}
 		constructTxCmd()
 	},
 }

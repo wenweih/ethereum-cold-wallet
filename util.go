@@ -171,3 +171,13 @@ func mkdirBySlice(slice []string) (*string, error) {
 	}
 	return &path, nil
 }
+
+// Contains tells whether a contains x.
+func Contains(a []string, x string) bool {
+	for _, n := range a {
+		if x == n {
+			return true
+		}
+	}
+	return false
+}
