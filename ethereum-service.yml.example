@@ -1,5 +1,22 @@
 # 文件目录规则：
 # 比如 key_store_path: "aa/bb/cc" 表示 keystore 放在在当前用户目录下 ~/aa/bb/cc/keystore
-key_store_path: ""
-random_pwd_path: ""
-fixed_pwd_path: ""
+key_store_path: "account/ks"
+random_pwd_path: "account/rp"
+fixed_pwd_path: "account/fp"
+mnemonic_path: "account/m"
+elastic_url: "http://47.75.159.52:9200"
+elastic_sniff: false
+#eth_rpc: "ws://47.75.159.52:8544"
+#eth_rpc: "ws://ec2-13-229-134-111.ap-southeast-1.compute.amazonaws.com:8544"
+eth_rpc: "ws://127.0.0.1:8546"
+geth_rpc: "ws://127.0.0.1:8546"
+parity_rpc: "ws://127.0.0.1:8546"
+etherscan_rpc:
+    key: "DUIG4H2MWH5QZ1W24NIHSXTIP9RA7KRMEA"
+    url: "https://api.etherscan.io/api"
+net_mode: "privatenet"
+db_mysql: "root:hww8773084123@tcp(127.0.0.1:32768)/eth_service"
+max_balance: 20.0
+to: "0x0cEabC861BeEBE8e57a19C26586C14c6f5E7B174"
+raw_tx_path: "tx/unsign"
+signed_tx_path: "tx/signed"
