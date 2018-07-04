@@ -22,13 +22,9 @@ type EtherScan struct {
 }
 
 type configure struct {
-	Keystore     string
-	RandomPwd    string
-	FixedPwd     string
 	ElasticURL   string
 	ElasticSniff bool
 	EthRPC       string
-	Mnemonic     string
 	MaxBalance   float64
 	To           []string
 	NetMode      string
@@ -56,9 +52,13 @@ var genAccountCmd = &cobra.Command{
 			return
 		}
 
+		accountDir, err := mkdirBySlice([]string{HomeDir(), "account", time.Now().Format("2006-01-02-15")})
+		if err != nil {
+			log.Fatalln("Fail to create account directory")
+		}
 		addresses := []*csvAddress{}
 		for index := 0; index < number; index++ {
-			address, err := createAccount(*fixedPwd)
+			address, err := createAccount(*fixedPwd, *accountDir)
 			if err != nil {
 				log.Fatalln(err.Error())
 			}
@@ -72,6 +72,7 @@ var syncCmd = &cobra.Command{
 	Use:   "sync",
 	Short: "sync chain data to elasticsearch",
 	Run: func(cmd *cobra.Command, args []string) {
+		config.InitConfig()
 		sync()
 	},
 }
@@ -80,6 +81,7 @@ var subscribeNewBlockCmd = &cobra.Command{
 	Use:   "sub",
 	Short: "subscribe new block event",
 	Run: func(cmd *cobra.Command, args []string) {
+		config.InitConfig()
 		subNewBlockCmd()
 	},
 }
@@ -88,6 +90,7 @@ var constructCmd = &cobra.Command{
 	Use:   "construct",
 	Short: "construct transactio",
 	Run: func(cmd *cobra.Command, args []string) {
+		config.InitConfig()
 		if !Contains([]string{"geth", "parity", "etherscan"}, node) {
 			log.Errorln("Only support geth, parity, etherscan")
 			return
@@ -100,6 +103,7 @@ var signCmd = &cobra.Command{
 	Use:   "sign",
 	Short: "sigin transactio",
 	Run: func(cmd *cobra.Command, args []string) {
+		config.InitConfig()
 		signTxCmd()
 	},
 }
@@ -108,6 +112,7 @@ var sendCmd = &cobra.Command{
 	Use:   "send",
 	Short: "broadcast signex transaction to ethereum network",
 	Run: func(cmd *cobra.Command, args []string) {
+		config.InitConfig()
 		nodeClient, err := ethclient.Dial(config.EthRPC)
 		if err != nil {
 			log.Fatalln(err.Error())
@@ -142,20 +147,12 @@ func (conf *configure) InitConfig() {
 
 	for key, value := range viper.AllSettings() {
 		switch key {
-		case "key_store_path":
-			conf.Keystore = value.(string)
-		case "random_pwd_path":
-			conf.RandomPwd = value.(string)
-		case "fixed_pwd_path":
-			conf.FixedPwd = value.(string)
 		case "elastic_url":
 			conf.ElasticURL = value.(string)
 		case "elastic_sniff":
 			conf.ElasticSniff = value.(bool)
 		case "eth_rpc":
 			conf.EthRPC = value.(string)
-		case "mnemonic_path":
-			conf.Mnemonic = value.(string)
 		case "max_balance":
 			conf.MaxBalance = value.(float64)
 		case "to":
@@ -189,7 +186,6 @@ func (conf *configure) InitConfig() {
 func init() {
 	config = new(configure)
 	etherscan = new(EtherScan)
-	config.InitConfig()
 	initLogger()
 	rootCmd.AddCommand(genAccountCmd)
 	rootCmd.AddCommand(subscribeNewBlockCmd)

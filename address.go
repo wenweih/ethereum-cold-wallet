@@ -48,7 +48,7 @@ type csvAddress struct {
 	Address string `csv:"address"`
 }
 
-func createAccount(fixedPwd string) (*string, error) {
+func createAccount(fixedPwd, accoutDir string) (*string, error) {
 	// Generate a mnemonic for memorization or user-friendly seeds
 	mnemonic, err := mnemonicFun()
 	if err != nil {
@@ -69,14 +69,14 @@ func createAccount(fixedPwd string) (*string, error) {
 	randomPwd := RandStringBytesMaskImprSrc(50)
 
 	// save mnemonic
-	saveMnemonic(address, *mnemonic, *path)
+	saveMnemonic(address, *mnemonic, *path, accoutDir)
 
 	// save keystore to configure path
-	saveKetstore(privateKey, fixedPwd, randomPwd)
+	saveKetstore(privateKey, fixedPwd, randomPwd, accoutDir)
 	// save random pwd with address to configure path
-	saveRandomPwd(address, randomPwd)
+	saveRandomPwd(address, randomPwd, accoutDir)
 	// save fixed pwd with address to configure path
-	saveFixedPwd(address, fixedPwd)
+	saveFixedPwd(address, fixedPwd, accoutDir)
 
 	log.WithFields(log.Fields{
 		"Generate Ethereum account": address,
@@ -161,7 +161,7 @@ func hdWallet(mnemonic string) (*ecdsa.PrivateKey, *string, error) {
 	return privateKey, &path, nil
 }
 
-func saveFixedPwd(address, fixedPwd string) {
+func saveFixedPwd(address, fixedPwd, dir string) {
 	fixedPwdJSON := FixedPwdJSON{
 		address,
 		fixedPwd,
@@ -171,7 +171,7 @@ func saveFixedPwd(address, fixedPwd string) {
 		log.Fatalf(err.Error())
 	}
 	hexFixedPwdJSON = append(hexFixedPwdJSON, '\n')
-	fixedPwdPath, err := mkdirBySlice([]string{HomeDir(), config.FixedPwd})
+	fixedPwdPath, err := mkdirBySlice([]string{dir, "fixed_pwd"})
 	if err != nil {
 		log.Fatalln("Could not create directory", err.Error())
 	}
@@ -181,7 +181,7 @@ func saveFixedPwd(address, fixedPwd string) {
 	}
 }
 
-func saveRandomPwd(address, randomPwd string) {
+func saveRandomPwd(address, randomPwd, dir string) {
 	randomPwdJSON := RandomPwdJSON{
 		address,
 		randomPwd,
@@ -191,7 +191,7 @@ func saveRandomPwd(address, randomPwd string) {
 		log.Fatalf(err.Error())
 	}
 	hexRandomPwdJSON = append(hexRandomPwdJSON, '\n')
-	randomPwdPath, err := mkdirBySlice([]string{HomeDir(), config.RandomPwd})
+	randomPwdPath, err := mkdirBySlice([]string{dir, "random_pwd"})
 	if err != nil {
 		log.Fatalln("Could not create directory", err.Error())
 	}
@@ -201,17 +201,16 @@ func saveRandomPwd(address, randomPwd string) {
 	}
 }
 
-func readPwd(address, pwdType string) (*string, error) {
+func readPwd(address, pwdType, path string) (*string, error) {
 	var (
-		dir     string
 		PwdFile string
 	)
 	switch pwdType {
 	case "fixedpwd":
-		dir = strings.Join([]string{HomeDir(), config.FixedPwd}, "/")
+		dir := strings.Join([]string{path, "fixed_pwd"}, "/")
 		PwdFile = strings.Join([]string{dir, "fixedpwd.json"}, "/")
 	case "randompwd":
-		dir = strings.Join([]string{HomeDir(), config.RandomPwd}, "/")
+		dir := strings.Join([]string{path, "random_pwd"}, "/")
 		PwdFile = strings.Join([]string{dir, "randompwd.json"}, "/")
 	default:
 		return nil, errors.New("pwdType error")
@@ -252,15 +251,15 @@ func readPwd(address, pwdType string) (*string, error) {
 	return pwd, nil
 }
 
-func saveMnemonic(address, mnemonic, path string) {
+func saveMnemonic(address, mnemonic, path, dir string) {
 	m := &MnemonicJSON{
 		address,
 		mnemonic,
 		path,
 	}
 
-	hexMnemonicJSON, err := json.Marshal(m)
-	mnemonicPath, err := mkdirBySlice([]string{HomeDir(), config.Mnemonic})
+	hexMnemonicJSON, _ := json.Marshal(m)
+	mnemonicPath, err := mkdirBySlice([]string{dir, "mnemonic"})
 	if err != nil {
 		log.Fatalln("Could not create directory", err.Error())
 	}
@@ -272,7 +271,7 @@ func saveMnemonic(address, mnemonic, path string) {
 	}
 }
 
-func saveKetstore(key *ecdsa.PrivateKey, fixedPwd, randomPwd string) {
+func saveKetstore(key *ecdsa.PrivateKey, fixedPwd, randomPwd, dir string) {
 	ks := &keystore.Key{
 		Id:         uuid.NewRandom(),
 		Address:    crypto.PubkeyToAddress(key.PublicKey),
@@ -284,7 +283,7 @@ func saveKetstore(key *ecdsa.PrivateKey, fixedPwd, randomPwd string) {
 		log.Fatalf(err.Error())
 	}
 
-	keystorePath, err := mkdirBySlice([]string{HomeDir(), config.Keystore})
+	keystorePath, err := mkdirBySlice([]string{dir, "keystore"})
 	if err != nil {
 		log.Fatalln("Could not create directory", err.Error())
 	}
@@ -297,23 +296,29 @@ func saveKetstore(key *ecdsa.PrivateKey, fixedPwd, randomPwd string) {
 	}
 }
 
-func readKeyStore(address string) ([]byte, error) {
-	dir := strings.Join([]string{HomeDir(), config.Keystore}, "/")
+func readKeyStore(address, path string) ([]byte, error) {
 	keystoreName := strings.Join([]string{address, "json"}, ".")
-	keystorefile := strings.Join([]string{dir, keystoreName}, "/")
+	keystorefile := strings.Join([]string{path, "keystore", keystoreName}, "/")
 	return ioutil.ReadFile(keystorefile)
 }
 
 func decodeKS2Key(addressHex string) (*keystore.Key, error) {
-	keyjson, err := readKeyStore(addressHex)
+	path, err := accountDir(addressHex)
+	if err != nil {
+		return nil, err
+	}
+
+	keyjson, err := readKeyStore(addressHex, *path)
 	if err != nil {
 		return nil, errors.New(strings.Join([]string{"read keystore error", err.Error()}, " "))
 	}
-	fixedpwd, err := readPwd(addressHex, "fixedpwd")
+
+	fixedpwd, err := readPwd(addressHex, "fixedpwd", *path)
 	if err != nil {
 		return nil, errors.New(strings.Join([]string{"read fixedpwd error", err.Error()}, " "))
 	}
-	randompwd, _ := readPwd(addressHex, "randompwd")
+
+	randompwd, err := readPwd(addressHex, "randompwd", *path)
 	if err != nil {
 		return nil, errors.New(strings.Join([]string{"read randompwd error", err.Error()}, " "))
 	}
