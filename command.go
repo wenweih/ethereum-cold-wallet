@@ -30,7 +30,7 @@ type configure struct {
 	EthRPC       string
 	Mnemonic     string
 	MaxBalance   float64
-	To           string
+	To           []string
 	NetMode      string
 	RawTx        string
 	SignedTx     string
@@ -159,7 +159,7 @@ func (conf *configure) InitConfig() {
 		case "max_balance":
 			conf.MaxBalance = value.(float64)
 		case "to":
-			conf.To = value.(string)
+			conf.To = viper.GetStringSlice(key)
 		case "net_mode":
 			conf.NetMode = value.(string)
 		case "raw_tx_path":

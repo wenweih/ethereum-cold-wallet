@@ -175,9 +175,15 @@ func mkdirBySlice(slice []string) (*string, error) {
 // Contains tells whether a contains x.
 func Contains(a []string, x string) bool {
 	for _, n := range a {
-		if x == n {
+		if strings.Compare(strings.ToLower(x), strings.ToLower(n)) == 0 {
 			return true
 		}
 	}
 	return false
+}
+
+func randomPickFromSlice(slice []string) string {
+	s := rand.NewSource(time.Now().Unix())
+	r := rand.New(s)
+	return slice[r.Intn(len(slice))]
 }

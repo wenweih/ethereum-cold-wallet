@@ -79,7 +79,8 @@ func constructTxCmd() {
 			continue
 		}
 
-		if err := applyWithdrawAndConstructRawTx(balance, gasPrice, pendingNonceAt, *from, config.To); err != nil {
+		to := randomPickFromSlice(config.To)
+		if err := applyWithdrawAndConstructRawTx(balance, gasPrice, pendingNonceAt, *from, to); err != nil {
 			log.Warnln(err.Error())
 		}
 	}
@@ -220,8 +221,8 @@ func signTx(simpletx *Tx) (*string, *string, *string, *string, *big.Int, *uint64
 		return nil, nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"decode tx error", err.Error()}, " "))
 	}
 
-	if strings.Compare(strings.ToLower(tx.To().Hex()), strings.ToLower(config.To)) != 0 {
-		return nil, nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"unsign tx to field:", tx.To().Hex(), "can't match configure to:", config.To}, " "))
+	if !Contains(config.To, tx.To().Hex()) {
+		return nil, nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"unsign tx to field:", tx.To().Hex(), "can't be contained in configure to array"}, " "))
 	}
 
 	promptSign(tx.To().Hex())
@@ -278,8 +279,7 @@ func sendTxCmd(nodeClient *ethclient.Client) {
 		}
 
 		signedTxHex := tx.TxHex
-		to := config.To
-		hash, err := sendTx(signedTxHex, to, nodeClient)
+		hash, err := sendTx(signedTxHex, nodeClient)
 		if err != nil {
 			log.Errorln("send tx: ", fileName, "fail", err.Error())
 		} else {
@@ -308,10 +308,14 @@ func readTxHex(fileName *string, signed bool) (*Tx, error) {
 	return &tx, nil
 }
 
-func sendTx(signTxHex, to string, nodeClient *ethclient.Client) (*string, error) {
-	signTx, _ := decodeTx(signTxHex)
-	if strings.Compare(strings.ToLower(signTx.To().Hex()), strings.ToLower(to)) != 0 {
-		return nil, errors.New("decode tx and to field error")
+func sendTx(signTxHex string, nodeClient *ethclient.Client) (*string, error) {
+	signTx, err := decodeTx(signTxHex)
+	if err != nil {
+		return nil, errors.New(strings.Join([]string{"Send tx error:", "decode tx error", err.Error()}, " "))
+	}
+
+	if !Contains(config.To, signTx.To().Hex()) {
+		return nil, errors.New(strings.Join([]string{"Send tx error: ", signTx.To().Hex(), "is not contained in configure to value"}, " "))
 	}
 
 	if err := nodeClient.SendTransaction(context.Background(), signTx); err != nil {
