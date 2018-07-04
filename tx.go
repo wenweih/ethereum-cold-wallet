@@ -221,11 +221,11 @@ func signTx(simpletx *Tx) (*string, *string, *string, *string, *big.Int, *uint64
 		return nil, nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"decode tx error", err.Error()}, " "))
 	}
 
-	if !Contains(config.To, tx.To().Hex()) {
-		return nil, nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"unsign tx to field:", tx.To().Hex(), "can't be contained in configure to array"}, " "))
+	if Contains(config.To, tx.To().Hex()) {
+		log.Infoln("签名交易：", tx.Hash().Hex(), " To:", tx.To().Hex())
+	} else {
+		promptSign(tx.To().Hex())
 	}
-
-	promptSign(tx.To().Hex())
 
 	key, err := decodeKS2Key(fromAddressHex)
 	if err != nil {

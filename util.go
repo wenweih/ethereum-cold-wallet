@@ -79,19 +79,16 @@ func promptPwd() (*string, error) {
 	return &resultTwo, nil
 }
 
-func promptSign(to string) (*string, error) {
+func promptSign(to string) {
 	prompt := promptui.Prompt{
-		Label:     strings.Join([]string{"确认转出地址是否为配置地址：", to}, " "),
+		Label:     strings.Join([]string{"To 地址不在配置文件中，请确认是否转入地址:", to}, " "),
 		IsConfirm: true,
 	}
 
-	result, err := prompt.Run()
+	_, err := prompt.Run()
 	if err != nil {
-		fmt.Printf("Prompt failed %v\n", err)
-		return nil, err
+		log.Fatalln("退出...")
 	}
-
-	return &result, nil
 }
 
 // RandStringBytesMaskImprSrc 随机数
