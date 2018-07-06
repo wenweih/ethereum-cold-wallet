@@ -72,7 +72,7 @@ func createAccount(fixedPwd, accoutDir string) (*string, error) {
 	saveMnemonic(address, *mnemonic, *path, accoutDir)
 
 	// save keystore to configure path
-	saveKetstore(privateKey, fixedPwd, randomPwd, accoutDir)
+	saveKeystore(privateKey, fixedPwd, randomPwd, accoutDir)
 	// save random pwd with address to configure path
 	saveRandomPwd(address, randomPwd, accoutDir)
 	// save fixed pwd with address to configure path
@@ -271,7 +271,7 @@ func saveMnemonic(address, mnemonic, path, dir string) {
 	}
 }
 
-func saveKetstore(key *ecdsa.PrivateKey, fixedPwd, randomPwd, dir string) {
+func saveKeystore(key *ecdsa.PrivateKey, fixedPwd, randomPwd, dir string) {
 	ks := &keystore.Key{
 		Id:         uuid.NewRandom(),
 		Address:    crypto.PubkeyToAddress(key.PublicKey),
