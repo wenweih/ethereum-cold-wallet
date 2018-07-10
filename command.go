@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -52,7 +53,9 @@ var genAccountCmd = &cobra.Command{
 			return
 		}
 
-		accountDir, err := mkdirBySlice([]string{HomeDir(), "account", time.Now().Format("2006-01-02-15")})
+		timeFormat := time.Now().Format("2006-01-02 15:04:05")
+		dir := strings.Join([]string{"version_1", timeFormat}, " ")
+		accountDir, err := mkdirBySlice([]string{HomeDir(), "account", dir})
 		if err != nil {
 			log.Fatalln("Fail to create account directory")
 		}
