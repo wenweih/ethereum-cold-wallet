@@ -48,7 +48,7 @@ type csvAddress struct {
 	Address string `csv:"address"`
 }
 
-func createAccount(fixedPwd, accoutDir string) (*string, error) {
+func createAccount(accoutDir string) (*string, error) {
 	// Generate a mnemonic for memorization or user-friendly seeds
 	mnemonic, err := mnemonicFun()
 	if err != nil {
@@ -65,18 +65,20 @@ func createAccount(fixedPwd, accoutDir string) (*string, error) {
 	// get the address
 	address := crypto.PubkeyToAddress(privateKey.PublicKey).Hex()
 
-	// generate rondom password
-	randomPwd := RandStringBytesMaskImprSrc(50)
+	// generate first rondom password
+	randomPwdFirst := RandStringBytesMaskImprSrc(50)
+
+	// generate second rondom password
+	randomPwdSecond := RandStringBytesMaskImprSrc(60)
 
 	// save mnemonic
 	saveMnemonic(address, *mnemonic, *path, accoutDir)
 
 	// save keystore to configure path
-	saveKeystore(privateKey, fixedPwd, randomPwd, accoutDir)
+	saveKeystore(privateKey, randomPwdFirst, randomPwdSecond, accoutDir)
 	// save random pwd with address to configure path
-	saveRandomPwd(address, randomPwd, accoutDir)
-	// save fixed pwd with address to configure path
-	saveFixedPwd(address, fixedPwd, accoutDir)
+	saveRandomPwd(address, randomPwdFirst, accoutDir, "random_pwd_first")
+	saveRandomPwd(address, randomPwdSecond, accoutDir, "random_pwd_second")
 
 	log.WithFields(log.Fields{
 		"Generate Ethereum account": address,
@@ -86,10 +88,10 @@ func createAccount(fixedPwd, accoutDir string) (*string, error) {
 	return &address, nil
 }
 
-func accountAuth(fixPwd, randomPwd string) string {
+func accountAuth(randomPwdFirst, randomPwdSecond string) string {
 	h := sha256.New()
-	h.Write([]byte(fixPwd))
-	h.Write([]byte(randomPwd))
+	h.Write([]byte(randomPwdFirst))
+	h.Write([]byte(randomPwdSecond))
 	auth := hex.EncodeToString(h.Sum(nil))
 	return auth
 }
@@ -181,7 +183,7 @@ func saveFixedPwd(address, fixedPwd, dir string) {
 	}
 }
 
-func saveRandomPwd(address, randomPwd, dir string) {
+func saveRandomPwd(address, randomPwd, dir, rdname string) {
 	randomPwdJSON := RandomPwdJSON{
 		address,
 		randomPwd,
@@ -191,7 +193,7 @@ func saveRandomPwd(address, randomPwd, dir string) {
 		log.Fatalf(err.Error())
 	}
 	hexRandomPwdJSON = append(hexRandomPwdJSON, '\n')
-	randomPwdPath, err := mkdirBySlice([]string{dir, "random_pwd"})
+	randomPwdPath, err := mkdirBySlice([]string{dir, rdname})
 	if err != nil {
 		log.Fatalln("Could not create directory", err.Error())
 	}
@@ -206,11 +208,11 @@ func readPwd(address, pwdType, path string) (*string, error) {
 		PwdFile string
 	)
 	switch pwdType {
-	case "fixedpwd":
-		dir := strings.Join([]string{path, "fixed_pwd"}, "/")
-		PwdFile = strings.Join([]string{dir, "fixedpwd.json"}, "/")
-	case "randompwd":
-		dir := strings.Join([]string{path, "random_pwd"}, "/")
+	case "random_pwd_first":
+		dir := strings.Join([]string{path, "random_pwd_first"}, "/")
+		PwdFile = strings.Join([]string{dir, "randompwd.json"}, "/")
+	case "random_pwd_second":
+		dir := strings.Join([]string{path, "random_pwd_second"}, "/")
 		PwdFile = strings.Join([]string{dir, "randompwd.json"}, "/")
 	default:
 		return nil, errors.New("pwdType error")
@@ -271,13 +273,13 @@ func saveMnemonic(address, mnemonic, path, dir string) {
 	}
 }
 
-func saveKeystore(key *ecdsa.PrivateKey, fixedPwd, randomPwd, dir string) {
+func saveKeystore(key *ecdsa.PrivateKey, randomPwdFirst, randomPwdSecond, dir string) {
 	ks := &keystore.Key{
 		Id:         uuid.NewRandom(),
 		Address:    crypto.PubkeyToAddress(key.PublicKey),
 		PrivateKey: key,
 	}
-	auth := accountAuth(fixedPwd, randomPwd)
+	auth := accountAuth(randomPwdFirst, randomPwdSecond)
 	keyjson, err := keystore.EncryptKey(ks, auth, keystore.StandardScryptN, keystore.StandardScryptP)
 	if err != nil {
 		log.Fatalf(err.Error())
@@ -313,17 +315,17 @@ func decodeKS2Key(addressHex string) (*keystore.Key, error) {
 		return nil, errors.New(strings.Join([]string{"read keystore error", err.Error()}, " "))
 	}
 
-	fixedpwd, err := readPwd(addressHex, "fixedpwd", *path)
+	randomPwdFirst, err := readPwd(addressHex, "random_pwd_first", *path)
 	if err != nil {
-		return nil, errors.New(strings.Join([]string{"read fixedpwd error", err.Error()}, " "))
+		return nil, errors.New(strings.Join([]string{"read random_pwd_first error", err.Error()}, " "))
 	}
 
-	randompwd, err := readPwd(addressHex, "randompwd", *path)
+	randomPwdSecond, err := readPwd(addressHex, "random_pwd_second", *path)
 	if err != nil {
-		return nil, errors.New(strings.Join([]string{"read randompwd error", err.Error()}, " "))
+		return nil, errors.New(strings.Join([]string{"read random_pwd_second error", err.Error()}, " "))
 	}
 
-	auth := accountAuth(*fixedpwd, *randompwd)
+	auth := accountAuth(*randomPwdFirst, *randomPwdSecond)
 
 	key, err := keystore.DecryptKey(keyjson, auth)
 	if err != nil {
