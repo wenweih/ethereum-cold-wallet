@@ -200,6 +200,12 @@
   version = "v1.0.5"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/skip2/go-qrcode"
+  packages = [".","bitset","reedsolomon"]
+  revision = "cf5f9fa2f0d847edb8e038db7ed975e239095e1a"
+
+[[projects]]
   name = "github.com/spf13/afero"
   packages = [".","mem"]
   revision = "787d034dfe70e44075ccc060d346146ef53270ad"
@@ -304,6 +310,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "eaabc90a272143f57d1431587a045d4338bd8087be2af83b2023cc02d700786b"
+  inputs-digest = "b36e62d24e384b3fb21232cd0462cf807308a3854dff363bf8b5eca34a5b44eb"
   solver-name = "gps-cdcl"
   solver-version = 1

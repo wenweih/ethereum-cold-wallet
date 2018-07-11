@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/ecdsa"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/gocarina/gocsv"
 	log "github.com/sirupsen/logrus"
+	qrcode "github.com/skip2/go-qrcode"
 	bip39 "github.com/tyler-smith/go-bip39"
 
 	"github.com/btcsuite/btcd/chaincfg"
@@ -71,8 +73,8 @@ func createAccount(accoutDir string) (*string, error) {
 	// generate second rondom password
 	randomPwdSecond := RandStringBytesMaskImprSrc(60)
 
-	// save mnemonic
-	saveMnemonic(address, *mnemonic, *path, accoutDir)
+	// save mnemonic qrcode
+	saveAESEncryptMnemonicQrcode(address, *mnemonic, *path, accoutDir)
 
 	// save keystore to configure path
 	saveKeystore(privateKey, randomPwdFirst, randomPwdSecond, accoutDir)
@@ -251,6 +253,46 @@ func readPwd(address, pwdType, path string) (*string, error) {
 		}
 	}
 	return pwd, nil
+}
+
+func saveAESEncryptMnemonicQrcode(address, mnemonic, path, dir string) {
+	// AES encrypt key should be 16 bytes (AES-128) or 32 (AES-256).
+	randomPwd := RandStringBytesMaskImprSrc(32)
+	m := &MnemonicJSON{
+		address,
+		mnemonic,
+		path,
+	}
+	bMnemonicJSON, _ := json.Marshal(m)
+
+	mNemonicCrypted, err := AesEncrypt(bMnemonicJSON, []byte(randomPwd))
+	if err != nil {
+		log.Fatalln("crypted mnemonic error", err.Error())
+	}
+
+	// save ASE 256 encode mnemonic and randomPwd(AesDecrypt key) qrcode
+	saveAES256EncodeMnemonicQrcode(mNemonicCrypted, randomPwd, address, dir)
+
+}
+
+func saveAES256EncodeMnemonicQrcode(mNemonicCrypted []byte, key, address, dir string) {
+	mnemonicScryptedStr := base64.StdEncoding.EncodeToString(mNemonicCrypted)
+	mnemonicPNGPath, err := mkdirBySlice([]string{dir, "mnemonic_qrcode", address})
+	if err != nil {
+		log.Fatalln("Could not create directory", err.Error())
+	}
+
+	mnemonicAesDecryptPNGName := strings.Join([]string{address, "aesdecrypt_mnemonic.png"}, "_")
+	mnemonicAesDecryptPNGFile := strings.Join([]string{*mnemonicPNGPath, mnemonicAesDecryptPNGName}, "/")
+	if err := qrcode.WriteFile(mnemonicScryptedStr, qrcode.Medium, 256, mnemonicAesDecryptPNGFile); err != nil {
+		log.Fatalln("encode encrypt qrcode error", err.Error())
+	}
+
+	AesDecryptKeyPNGName := strings.Join([]string{address, "aesdecrypt_key.png"}, "_")
+	AesDecryptKeyPNGFile := strings.Join([]string{*mnemonicPNGPath, AesDecryptKeyPNGName}, "/")
+	if err := qrcode.WriteFile(key, qrcode.Medium, 256, AesDecryptKeyPNGFile); err != nil {
+		log.Fatalln("encode key qrcode error", err.Error())
+	}
 }
 
 func saveMnemonic(address, mnemonic, path, dir string) {
