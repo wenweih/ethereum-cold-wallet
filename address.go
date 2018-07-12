@@ -266,7 +266,12 @@ func saveAESEncryptMnemonicQrcode(address, mnemonic, path, dir string) {
 }
 
 func saveAES256EncodeMnemonicQrcode(mNemonicCrypted []byte, key, address, dir string) {
+	h := sha256.New()
+	h.Write(mNemonicCrypted)
+	mnemonicSha := base64.URLEncoding.EncodeToString(h.Sum(nil))
 	mnemonicScryptedStr := base64.StdEncoding.EncodeToString(mNemonicCrypted)
+	mnemonicSha256AndAESResult := strings.Join([]string{mnemonicScryptedStr, mnemonicSha}, "")
+
 	mnemonicPNGPath, err := mkdirBySlice([]string{dir, "mnemonic_qrcode", address})
 	if err != nil {
 		log.Fatalln("Could not create directory", err.Error())
@@ -274,7 +279,7 @@ func saveAES256EncodeMnemonicQrcode(mNemonicCrypted []byte, key, address, dir st
 
 	mnemonicAesDecryptPNGName := strings.Join([]string{address, "aesdecrypt_mnemonic.png"}, "_")
 	mnemonicAesDecryptPNGFile := strings.Join([]string{*mnemonicPNGPath, mnemonicAesDecryptPNGName}, "/")
-	if err := qrcode.WriteFile(mnemonicScryptedStr, qrcode.Medium, 256, mnemonicAesDecryptPNGFile); err != nil {
+	if err := qrcode.WriteFile(mnemonicSha256AndAESResult, qrcode.Medium, 256, mnemonicAesDecryptPNGFile); err != nil {
 		log.Fatalln("encode encrypt qrcode error", err.Error())
 	}
 
