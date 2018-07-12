@@ -235,21 +235,11 @@ func readPwd(address, pwdType, path string) (*string, error) {
 			break
 		}
 
-		switch pwdType {
-		case "fixedpwd":
-			var fixedpwd FixedPwdJSON
-			json.Unmarshal(line, &fixedpwd)
-			if fixedpwd.Address == address {
-				pwd = &(fixedpwd.FixedPwd)
-				return pwd, nil
-			}
-		case "randompwd":
-			var randompwd RandomPwdJSON
-			json.Unmarshal(line, &randompwd)
-			if randompwd.Address == address {
-				pwd = &(randompwd.Randompwd)
-				return pwd, nil
-			}
+		var randompwd RandomPwdJSON
+		json.Unmarshal(line, &randompwd)
+		if randompwd.Address == address {
+			pwd = &(randompwd.Randompwd)
+			return pwd, nil
 		}
 	}
 	return pwd, nil
@@ -368,7 +358,6 @@ func decodeKS2Key(addressHex string) (*keystore.Key, error) {
 	}
 
 	auth := accountAuth(*randomPwdFirst, *randomPwdSecond)
-
 	key, err := keystore.DecryptKey(keyjson, auth)
 	if err != nil {
 		return nil, err
