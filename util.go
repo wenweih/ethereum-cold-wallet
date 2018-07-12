@@ -236,14 +236,14 @@ func accountDir(address string) (*string, error) {
 	rootDir := strings.Join([]string{HomeDir(), "account"}, "/")
 	folders, err := ioutil.ReadDir(rootDir)
 	if err != nil {
-		return nil, errors.New("Read Keystore error")
+		return nil, errors.New("Get account directory error")
 	}
 	keystoreName := strings.Join([]string{address, "json"}, ".")
 	for _, folder := range folders {
 		dir := strings.Join([]string{rootDir, folder.Name(), "keystore"}, "/")
 		files, err := ioutil.ReadDir(dir)
 		if err != nil {
-			return nil, errors.New("read file error")
+			return nil, errors.New("Get account directory error")
 		}
 		for _, f := range files {
 			if strings.Compare(strings.ToLower(f.Name()), strings.ToLower(keystoreName)) == 0 {

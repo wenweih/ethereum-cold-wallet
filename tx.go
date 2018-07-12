@@ -229,7 +229,7 @@ func signTx(simpletx *Tx) (*string, *string, *string, *string, *big.Int, *uint64
 
 	key, err := decodeKS2Key(fromAddressHex)
 	if err != nil {
-		return nil, nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"decode keystore to key error", err.Error()}, " "))
+		return nil, nil, nil, nil, nil, nil, errors.New(strings.Join([]string{"decode keystore to key error:", err.Error()}, " "))
 	}
 
 	// https://github.com/ethereum/EIPs/blob/master/EIPS/eip-155.md
