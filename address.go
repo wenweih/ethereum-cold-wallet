@@ -370,8 +370,8 @@ func decodeKS2Key(addressHex string) (*keystore.Key, error) {
 	return key, nil
 }
 
-func exportCSV(addresses []*csvAddress) {
-	addressPath := strings.Join([]string{HomeDir(), "eth_address.csv"}, "/")
+func export2CSV(addresses []*csvAddress, path string) {
+	addressPath := strings.Join([]string{path, "eth_address.csv"}, "/")
 	addressFile, err := os.OpenFile(addressPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, os.ModePerm)
 	if err != nil {
 		log.Fatalln(err.Error())

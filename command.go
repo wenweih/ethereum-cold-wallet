@@ -62,7 +62,7 @@ var genAccountCmd = &cobra.Command{
 			}
 			addresses = append(addresses, &csvAddress{Address: *address})
 		}
-		exportCSV(addresses)
+		export2CSV(addresses, *accountDir)
 	},
 }
 
