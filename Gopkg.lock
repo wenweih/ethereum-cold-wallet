@@ -3,6 +3,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/ajstarks/svgo"
+  packages = ["."]
+  revision = "644b8db467afccf19a0692a3e31a1868e4287ab8"
+
+[[projects]]
+  branch = "master"
   name = "github.com/aristanetworks/goarista"
   packages = ["monotime"]
   revision = "59944ff78bc1de686b0aba1444dfd380f48f03d4"
@@ -57,6 +63,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/golang/freetype"
+  packages = [".","raster","truetype"]
+  revision = "e2365dfdc4a05e4b8299a783240d4a7d5a65d4e4"
+
+[[projects]]
+  branch = "master"
   name = "github.com/golang/snappy"
   packages = ["."]
   revision = "2e65f85255dbc3072edf28d6b5b8efc472979f5a"
@@ -92,6 +104,18 @@
   revision = "720a0952cc2ac777afc295d9861263e2a4cf96a1"
 
 [[projects]]
+  name = "github.com/jung-kurt/gofpdf"
+  packages = ["."]
+  revision = "14c1db30737a138f8d9797cffea58783892b2fae"
+  version = "v1.0.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/llgcode/draw2d"
+  packages = [".","draw2dbase","draw2dimg"]
+  revision = "274031cf2abe8acd15c4a911e1f7f1295fc4830c"
+
+[[projects]]
   branch = "master"
   name = "github.com/lunixbochs/vtclean"
   packages = ["."]
@@ -110,10 +134,10 @@
   revision = "3fdea8d05856a0c8df22ed4bc71b3219245e4485"
 
 [[projects]]
+  branch = "master"
   name = "github.com/manifoldco/promptui"
   packages = [".","list","screenbuf"]
-  revision = "3dd80c00b7cb0bc779d1c204da6f3ae0fa6a4eee"
-  version = "v0.3.0"
+  revision = "d994d9b14ee60b6d280202cab314e4c90f9da4be"
 
 [[projects]]
   name = "github.com/mattn/go-colorable"
@@ -261,6 +285,12 @@
 
 [[projects]]
   branch = "master"
+  name = "golang.org/x/image"
+  packages = ["draw","font","math/f64","math/fixed","tiff","tiff/lzw"]
+  revision = "c73c2afc3b812cdd6385de5a50616511c4a3d458"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/net"
   packages = ["idna","publicsuffix","websocket"]
   revision = "db08ff08e8622530d9ed3a0e8ac279f6d4c02196"
@@ -276,6 +306,12 @@
   packages = ["collate","collate/build","internal/colltab","internal/gen","internal/tag","internal/triegen","internal/ucd","language","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
   revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
   version = "v0.3.0"
+
+[[projects]]
+  branch = "master"
+  name = "gonum.org/v1/plot"
+  packages = [".","vg","vg/draw","vg/fonts","vg/vgeps","vg/vgimg","vg/vgpdf","vg/vgsvg"]
+  revision = "aabf5879ffdbf9199bfbe8ada6a7640398d062ea"
 
 [[projects]]
   name = "google.golang.org/appengine"
@@ -310,6 +346,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b36e62d24e384b3fb21232cd0462cf807308a3854dff363bf8b5eca34a5b44eb"
+  inputs-digest = "7f79923eee8fbd82a774c3c12d7013f07cab2cf0f2f0acc96538753b5257b744"
   solver-name = "gps-cdcl"
   solver-version = 1
