@@ -14,7 +14,6 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
-	"image/jpeg"
 	"image/png"
 
 	"gonum.org/v1/plot/vg"
@@ -28,31 +27,25 @@ func init() {
 }
 
 // WaterMark for adding a watermark on the image
-func WaterMark(img image.Image, markText string) (image.Image, error) {
+func WaterMark(img image.Image, address, qrcodeType string) (image.Image, error) {
 	// image's length to canvas's length
 	bounds := img.Bounds()
 	w := vg.Length(bounds.Max.X) * vg.Inch / vgimg.DefaultDPI
 	h := vg.Length(bounds.Max.Y) * vg.Inch / vgimg.DefaultDPI
 	diagonal := vg.Length(math.Sqrt(float64(w*w + h*h)))
-
 	// create a canvas, which width and height are diagonal
-	c := vgimg.New(diagonal, diagonal)
-
-	// draw image on the center of canvas
-	rect := vg.Rectangle{}
-	rect.Min.X = diagonal/2 - w/2
-	rect.Min.Y = diagonal/2 - h/2
-	rect.Max.X = diagonal/2 + w/2
-	rect.Max.Y = diagonal/2 + h/2
-	c.DrawImage(rect, img)
+	c := vgimg.New(diagonal, diagonal/2)
 
 	// make a fontStyle, which width is vg.Inch * 0.7
-	fontStyle, _ := vg.MakeFont("Courier", vg.Centimeter*0.25)
+	fontStyle, _ := vg.MakeFont("Courier", diagonal/42)
 
 	// set the color of markText
 	c.SetColor(color.RGBA{0, 0, 0, 200})
+	c.FillString(fontStyle, vg.Point{X: vg.Length(bounds.Min.X + 10), Y: diagonal/2 - 20}, "Ethereum Address: ")
+	c.FillString(fontStyle, vg.Point{X: vg.Length(bounds.Min.X + 10), Y: diagonal/2 - 35}, address)
 
-	c.FillString(fontStyle, vg.Point{X: 45, Y: 56.20380307235399}, markText)
+	c.FillString(fontStyle, vg.Point{X: vg.Length(bounds.Min.X + 10), Y: diagonal/2 - 60}, strings.Join([]string{"Generate Time:", time.Now().Format("2006-01-02 15:04:05")}, " "))
+	c.FillString(fontStyle, vg.Point{X: vg.Length(bounds.Min.X + 10), Y: diagonal/2 - 80}, strings.Join([]string{"qrcode type:", qrcodeType}, " "))
 
 	// canvas writeto jpeg
 	// canvas.img is private
@@ -72,12 +65,12 @@ func WaterMark(img image.Image, markText string) (image.Image, error) {
 	size := bounds.Size()
 	bounds = image.Rect(ctp-size.X/2, ctp-size.Y/2, ctp+size.X/2, ctp+size.Y/2)
 	rv := image.NewRGBA(bounds)
-	draw.Draw(rv, bounds, img, bounds.Min, draw.Src)
+	draw.Draw(rv, bounds, img, image.Point{0, 0}, draw.Src)
 	return rv, nil
 }
 
 // MarkingPicture for marking picture with text
-func MarkingPicture(filepath, text string) (image.Image, error) {
+func MarkingPicture(filepath, address, qrcodeType string) (image.Image, error) {
 	f, err := os.Open(filepath)
 	if err != nil {
 		return nil, err
@@ -89,30 +82,40 @@ func MarkingPicture(filepath, text string) (image.Image, error) {
 		return nil, err
 	}
 
-	img, err = WaterMark(img, text)
+	img, err = WaterMark(img, address, qrcodeType)
 	if err != nil {
 		return nil, err
 	}
 	return img, nil
 }
 
-func writeTo(img image.Image, ext string) (rv *bytes.Buffer, err error) {
-	ext = strings.ToLower(ext)
-	rv = new(bytes.Buffer)
-	switch ext {
-	case ".jpg", ".jpeg":
-		err = jpeg.Encode(rv, img, &jpeg.Options{Quality: 100})
-	case ".png":
-		err = png.Encode(rv, img)
-	}
-	return rv, err
-}
-
-func wm(target, text string) {
-	img, err := MarkingPicture(target, text)
+func wm(target, address, qrcodeType string) {
+	img, err := MarkingPicture(target, address, qrcodeType)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
+
+	srcFile, err := os.Open(target)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	srcImage, _, err := image.Decode(srcFile)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	sb := srcImage.Bounds()
+	r2 := image.Rectangle{}
+	r2.Min.X = 0
+	r2.Min.Y = sb.Max.Y
+	r2.Max.X = sb.Max.X
+	r2.Max.Y = sb.Max.Y * 2
+	r := image.Rectangle{image.Point{0, 0}, r2.Max}
+	rgba := image.NewRGBA(r)
+
+	draw.Draw(rgba, sb, srcImage, image.Point{0, 0}, draw.Src)
+	draw.Draw(rgba, r2, img, image.Point{img.Bounds().Min.X, img.Bounds().Min.Y - 10}, draw.Src)
 
 	ext := path.Ext(target)
 	base := strings.Split(path.Base(target), ".")[0] + "_marked"
@@ -121,14 +124,5 @@ func wm(target, text string) {
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
-
-	buff, err := writeTo(img, ext)
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-
-	if _, err = buff.WriteTo(f); err != nil {
-		log.Fatalln(err.Error())
-	}
-
+	png.Encode(f, rgba)
 }

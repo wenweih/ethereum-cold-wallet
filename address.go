@@ -261,11 +261,10 @@ func saveAESEncryptMnemonicQrcode(address, mnemonic, path, dir string) {
 	}
 
 	// save ASE 256 encode mnemonic and randomPwd(AesDecrypt key) qrcode
-	saveAES256EncodeMnemonicQrcode(mNemonicCrypted, randomPwd, address, dir)
-
+	saveAES256EncodeMnemonicQrcode(mNemonicCrypted, randomPwd, address, dir, 512)
 }
 
-func saveAES256EncodeMnemonicQrcode(mNemonicCrypted []byte, key, address, dir string) {
+func saveAES256EncodeMnemonicQrcode(mNemonicCrypted []byte, key, address, dir string, size int) {
 	h := sha256.New()
 	h.Write(mNemonicCrypted)
 	mnemonicSha := base64.URLEncoding.EncodeToString(h.Sum(nil))
@@ -279,19 +278,19 @@ func saveAES256EncodeMnemonicQrcode(mNemonicCrypted []byte, key, address, dir st
 
 	mnemonicAesDecryptPNGName := strings.Join([]string{address, "aesdecrypt_mnemonic.png"}, "_")
 	mnemonicAesDecryptPNGFile := strings.Join([]string{*mnemonicPNGPath, mnemonicAesDecryptPNGName}, "/")
-	if err := qrcode.WriteFile(mnemonicSha256AndAESResult, qrcode.Highest, 256, mnemonicAesDecryptPNGFile); err != nil {
+	if err := qrcode.WriteFile(mnemonicSha256AndAESResult, qrcode.Highest, size, mnemonicAesDecryptPNGFile); err != nil {
 		log.Fatalln("encode encrypt qrcode error", err.Error())
 	}
 
-	wm(mnemonicAesDecryptPNGFile, address)
+	wm(mnemonicAesDecryptPNGFile, address, "aesdecrypt_mnemonic")
 
 	AesDecryptKeyPNGName := strings.Join([]string{address, "aesdecrypt_key.png"}, "_")
 	AesDecryptKeyPNGFile := strings.Join([]string{*mnemonicPNGPath, AesDecryptKeyPNGName}, "/")
-	if err := qrcode.WriteFile(key, qrcode.Medium, 256, AesDecryptKeyPNGFile); err != nil {
+	if err := qrcode.WriteFile(key, qrcode.Medium, size, AesDecryptKeyPNGFile); err != nil {
 		log.Fatalln("encode key qrcode error", err.Error())
 	}
 
-	wm(AesDecryptKeyPNGFile, address)
+	wm(AesDecryptKeyPNGFile, address, "aesdecrypt_key")
 
 	os.Remove(mnemonicAesDecryptPNGFile)
 	os.Remove(AesDecryptKeyPNGFile)
