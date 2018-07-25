@@ -11,7 +11,6 @@ import (
 	"math/big"
 	"math/rand"
 	"os"
-	"path"
 	"strings"
 	"time"
 
@@ -233,22 +232,23 @@ func randomPickFromSlice(slice []string) string {
 }
 
 func accountDir(address string) (*string, error) {
-	rootDir := strings.Join([]string{HomeDir(), "account"}, "/")
-	folders, err := ioutil.ReadDir(rootDir)
+	ksPath := strings.Join([]string{HomeDir(), "account", "keystore"}, "/")
+	timeFolders, err := ioutil.ReadDir(ksPath)
 	if err != nil {
-		return nil, errors.New("Get account directory error")
+		return nil, errors.New("Get keystore directory error")
 	}
+
 	keystoreName := strings.Join([]string{address, "json"}, ".")
-	for _, folder := range folders {
-		dir := strings.Join([]string{rootDir, folder.Name(), "keystore"}, "/")
-		files, err := ioutil.ReadDir(dir)
+	for _, timeDir := range timeFolders {
+		timePath := strings.Join([]string{HomeDir(), "account", "keystore", timeDir.Name()}, "/")
+		files, err := ioutil.ReadDir(timePath)
 		if err != nil {
-			return nil, errors.New("Get account directory error")
+			return nil, errors.New("Get timeDir error")
 		}
 		for _, f := range files {
 			if strings.Compare(strings.ToLower(f.Name()), strings.ToLower(keystoreName)) == 0 {
-				path := path.Dir(dir)
-				return &path, err
+				path := timeDir.Name()
+				return &path, nil
 			}
 		}
 	}

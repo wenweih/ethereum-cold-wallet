@@ -205,16 +205,16 @@ func saveRandomPwd(address, randomPwd, dir, rdname, timeDir string) {
 	}
 }
 
-func readPwd(address, pwdType, path string) (*string, error) {
+func readPwd(address, pwdType, timeDir string) (*string, error) {
 	var (
 		PwdFile string
 	)
 	switch pwdType {
 	case "random_pwd_first":
-		dir := strings.Join([]string{path, "random_pwd_first"}, "/")
+		dir := strings.Join([]string{HomeDir(), "account", "random_pwd_first", timeDir}, "/")
 		PwdFile = strings.Join([]string{dir, "randompwd.json"}, "/")
 	case "random_pwd_second":
-		dir := strings.Join([]string{path, "random_pwd_second"}, "/")
+		dir := strings.Join([]string{HomeDir(), "account", "random_pwd_second", timeDir}, "/")
 		PwdFile = strings.Join([]string{dir, "randompwd.json"}, "/")
 	default:
 		return nil, errors.New("pwdType error")
@@ -343,27 +343,27 @@ func saveKeystore(key *ecdsa.PrivateKey, randomPwdFirst, randomPwdSecond, dir, t
 
 func readKeyStore(address, path string) ([]byte, error) {
 	keystoreName := strings.Join([]string{address, "json"}, ".")
-	keystorefile := strings.Join([]string{path, "keystore", keystoreName}, "/")
+	keystorefile := strings.Join([]string{path, keystoreName}, "/")
 	return ioutil.ReadFile(keystorefile)
 }
 
 func decodeKS2Key(addressHex string) (*keystore.Key, error) {
-	path, err := accountDir(addressHex)
+	timeDir, err := accountDir(addressHex)
 	if err != nil {
 		return nil, err
 	}
-
-	keyjson, err := readKeyStore(addressHex, *path)
+	ksPath := strings.Join([]string{HomeDir(), "account", "keystore", *timeDir}, "/")
+	keyjson, err := readKeyStore(addressHex, ksPath)
 	if err != nil {
 		return nil, errors.New(strings.Join([]string{"read keystore error", err.Error()}, " "))
 	}
 
-	randomPwdFirst, err := readPwd(addressHex, "random_pwd_first", *path)
+	randomPwdFirst, err := readPwd(addressHex, "random_pwd_first", *timeDir)
 	if err != nil {
 		return nil, errors.New(strings.Join([]string{"read random_pwd_first error", err.Error()}, " "))
 	}
 
-	randomPwdSecond, err := readPwd(addressHex, "random_pwd_second", *path)
+	randomPwdSecond, err := readPwd(addressHex, "random_pwd_second", *timeDir)
 	if err != nil {
 		return nil, errors.New(strings.Join([]string{"read random_pwd_second error", err.Error()}, " "))
 	}
