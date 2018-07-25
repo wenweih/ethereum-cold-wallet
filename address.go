@@ -50,7 +50,7 @@ type csvAddress struct {
 	Address string `csv:"address"`
 }
 
-func createAccount(accoutDir string) (*string, error) {
+func createAccount(accoutDir, timeDir string) (*string, error) {
 	// Generate a mnemonic for memorization or user-friendly seeds
 	mnemonic, err := mnemonicFun()
 	if err != nil {
@@ -74,13 +74,13 @@ func createAccount(accoutDir string) (*string, error) {
 	randomPwdSecond := RandStringBytesMaskImprSrc(60)
 
 	// save mnemonic qrcode
-	saveAESEncryptMnemonicQrcode(address, *mnemonic, *path, accoutDir)
+	saveAESEncryptMnemonicQrcode(address, *mnemonic, *path, accoutDir, timeDir)
 
 	// save keystore to configure path
-	saveKeystore(privateKey, randomPwdFirst, randomPwdSecond, accoutDir)
+	saveKeystore(privateKey, randomPwdFirst, randomPwdSecond, accoutDir, timeDir)
 	// save random pwd with address to configure path
-	saveRandomPwd(address, randomPwdFirst, accoutDir, "random_pwd_first")
-	saveRandomPwd(address, randomPwdSecond, accoutDir, "random_pwd_second")
+	saveRandomPwd(address, randomPwdFirst, accoutDir, "random_pwd_first", timeDir)
+	saveRandomPwd(address, randomPwdSecond, accoutDir, "random_pwd_second", timeDir)
 
 	log.WithFields(log.Fields{
 		"Generate Ethereum account": address,
@@ -185,7 +185,7 @@ func saveFixedPwd(address, fixedPwd, dir string) {
 	}
 }
 
-func saveRandomPwd(address, randomPwd, dir, rdname string) {
+func saveRandomPwd(address, randomPwd, dir, rdname, timeDir string) {
 	randomPwdJSON := RandomPwdJSON{
 		address,
 		randomPwd,
@@ -195,7 +195,7 @@ func saveRandomPwd(address, randomPwd, dir, rdname string) {
 		log.Fatalf(err.Error())
 	}
 	hexRandomPwdJSON = append(hexRandomPwdJSON, '\n')
-	randomPwdPath, err := mkdirBySlice([]string{dir, rdname})
+	randomPwdPath, err := mkdirBySlice([]string{dir, rdname, timeDir})
 	if err != nil {
 		log.Fatalln("Could not create directory", err.Error())
 	}
@@ -245,7 +245,7 @@ func readPwd(address, pwdType, path string) (*string, error) {
 	return pwd, nil
 }
 
-func saveAESEncryptMnemonicQrcode(address, mnemonic, path, dir string) {
+func saveAESEncryptMnemonicQrcode(address, mnemonic, path, dir, timeStr string) {
 	// AES encrypt key should be 16 bytes (AES-128) or 32 (AES-256).
 	randomPwd := RandStringBytesMaskImprSrc(32)
 	m := &MnemonicJSON{
@@ -261,17 +261,17 @@ func saveAESEncryptMnemonicQrcode(address, mnemonic, path, dir string) {
 	}
 
 	// save ASE 256 encode mnemonic and randomPwd(AesDecrypt key) qrcode
-	saveAES256EncodeMnemonicQrcode(mNemonicCrypted, randomPwd, address, dir, 512)
+	saveAES256EncodeMnemonicQrcode(mNemonicCrypted, randomPwd, address, dir, timeStr, 512)
 }
 
-func saveAES256EncodeMnemonicQrcode(mNemonicCrypted []byte, key, address, dir string, size int) {
+func saveAES256EncodeMnemonicQrcode(mNemonicCrypted []byte, key, address, dir, timeDir string, size int) {
 	h := sha256.New()
 	h.Write(mNemonicCrypted)
 	mnemonicSha := base64.URLEncoding.EncodeToString(h.Sum(nil))
 	mnemonicScryptedStr := base64.StdEncoding.EncodeToString(mNemonicCrypted)
 	mnemonicSha256AndAESResult := strings.Join([]string{mnemonicScryptedStr, mnemonicSha}, "")
 
-	mnemonicPNGPath, err := mkdirBySlice([]string{dir, "mnemonic_qrcode", address})
+	mnemonicPNGPath, err := mkdirBySlice([]string{dir, "mnemonic_qrcode", timeDir, address})
 	if err != nil {
 		log.Fatalln("Could not create directory", err.Error())
 	}
@@ -316,7 +316,7 @@ func saveMnemonic(address, mnemonic, path, dir string) {
 	}
 }
 
-func saveKeystore(key *ecdsa.PrivateKey, randomPwdFirst, randomPwdSecond, dir string) {
+func saveKeystore(key *ecdsa.PrivateKey, randomPwdFirst, randomPwdSecond, dir, timeDir string) {
 	ks := &keystore.Key{
 		Id:         uuid.NewRandom(),
 		Address:    crypto.PubkeyToAddress(key.PublicKey),
@@ -328,7 +328,7 @@ func saveKeystore(key *ecdsa.PrivateKey, randomPwdFirst, randomPwdSecond, dir st
 		log.Fatalf(err.Error())
 	}
 
-	keystorePath, err := mkdirBySlice([]string{dir, "keystore"})
+	keystorePath, err := mkdirBySlice([]string{dir, "keystore", timeDir})
 	if err != nil {
 		log.Fatalln("Could not create directory", err.Error())
 	}

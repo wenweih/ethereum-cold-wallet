@@ -49,14 +49,15 @@ var genAccountCmd = &cobra.Command{
 	Short: "Generate ethereum account",
 	Run: func(cmd *cobra.Command, args []string) {
 		timeFormat := time.Now().Format("2006-01-02_15-04-05")
-		dir := strings.Join([]string{"version_1", timeFormat}, "_")
-		accountDir, err := mkdirBySlice([]string{HomeDir(), "account", dir})
+		timeDir := strings.Join([]string{"version_1", timeFormat}, "_")
+
+		accountDir, err := mkdirBySlice([]string{HomeDir(), "account"})
 		if err != nil {
 			log.Fatalln("Fail to create account directory")
 		}
 		addresses := []*csvAddress{}
 		for index := 0; index < number; index++ {
-			address, err := createAccount(*accountDir)
+			address, err := createAccount(*accountDir, timeDir)
 			if err != nil {
 				log.Fatalln(err.Error())
 			}
