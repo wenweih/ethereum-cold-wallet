@@ -1,12 +1,10 @@
-# 文件目录规则：
-# 比如 key_store_path: "aa/bb/cc" 表示 keystore 放在在当前用户目录下 ~/aa/bb/cc/keystore
-elastic_url: "http://47.75.159.52:9200"
+elastic_url: "http://host:port"
 elastic_sniff: false
 eth_rpc: "ws://127.0.0.1:8546"
 geth_rpc: "ws://127.0.0.1:8546"
-parity_rpc: "ws://47.75.159.52:8792"
+parity_rpc: "ws://host:port"
 etherscan_rpc:
-    key: "DUIG4H2MWH5QZ1W24NIHSXTIP9RA7KRMEA"
+    key: ""
     url: "https://api.etherscan.io/api"
 net_mode: "privatenet"
 db_mysql: "root:hww8773084123@tcp(127.0.0.1:32768)/eth_service"
