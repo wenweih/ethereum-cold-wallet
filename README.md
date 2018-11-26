@@ -1,4 +1,4 @@
-## eth-cold-wallet
+## ethereum-cold-wallet
 Generate Ethereum HD wallet & offline sign && broadcast signed tx to network. Solution for eth cold wallet.
 ### Install
 Environment Require
@@ -9,8 +9,8 @@ Environment Require
 - MySQL (construct tx)
 
 ```bash
-go get -u github.com/wenweih/eth-cold-wallet
-cd $GOPATH/src/github.com/wenweih/eth-cold-wallet
+go get -u github.com/wenweih/ethereum-cold-wallet
+cd $GOPATH/src/github.com/wenweih/ethereum-cold-wallet
 dep ensure -v -update
 ```
 because of the codebase import [go-ethereum](https://github.com/ethereum/go-ethereum), which is dependent on c, so cross compile need cgo. I hightly recommend a tool name [xgo](https://github.com/karalabe/xgo) for Go CGO cross compiler, which  is based on the concept of lightweight Linux containers.
@@ -24,9 +24,9 @@ xgo --targets=linux/amd64 ./
 ```
 if you are insterested in xgo usage, pls read the docutment: [xgo#usage](https://github.com/karalabe/xgo#usage)
 ### Usage
-Firstly, modify configure and put it in ~/eth-cold-wallet.yml
+Firstly, modify configure and put it in ~/ethereum-cold-wallet.yml
 ```bash
-./eth-cold-wallet -h
+./ethereum-cold-wallet -h
 time="2018-08-12T23:47:55+08:00" level=warning Note="all operate is recorded" Time:="Sun Aug 12 23:47:55 2018"
 Generate Ethereum account and sign tx
 
@@ -48,7 +48,7 @@ Use "ethereum-service [command] --help" for more information about a command.
 ```
 #### Generate HD Wallet
 ```bash
-./eth-cold-wallet genaccount -n 3
+./ethereum-cold-wallet genaccount -n 3
 time="2018-08-13T15:40:10+08:00" level=warning Note="all operate is recorded" Time:="Mon Aug 13 15:40:10 2018"
 time="2018-08-13T15:40:11+08:00" level=info Generate Ethereum account=0xe5379d64Cd7d2D963B03da01fB052218a9aCB0Ce Time:="Mon Aug 13 15:40:11 2018"
 time="2018-08-13T15:40:12+08:00" level=info Generate Ethereum account=0x8Dc63ce8b979627C11f5EEf673990814D4815613 Time:="Mon Aug 13 15:40:12 2018"
@@ -107,9 +107,9 @@ soft link to **eth_address.csv** and construct transacion for address **0xe5379d
 ```bash
 ln /Users/hww/account/eth_address.csv ~/
 
-▶ eth-cold-wallet construct -n geth
+▶ ethereum-cold-wallet construct -n geth
 time="2018-08-13T15:45:46+08:00" level=warning Note="all operate is recorded" Time:="Mon Aug 13 15:45:46 2018"
-time="2018-08-13T15:45:46+08:00" level=info Time:="Mon Aug 13 15:45:46 2018" Using Configure file=/Users/hww/eth-cold-wallet.yml
+time="2018-08-13T15:45:46+08:00" level=info Time:="Mon Aug 13 15:45:46 2018" Using Configure file=/Users/hww/ethereum-cold-wallet.yml
 time="2018-08-13T15:45:46+08:00" level=info msg="csv2db done"
 time="2018-08-13T15:45:46+08:00" level=info msg="Exported HexTx to /Users/hww/tx/unsign/unsign_from.0xe5379d64Cd7d2D963B03da01fB052218a9aCB0Ce.json"
 time="2018-08-13T15:45:46+08:00" level=warning msg="Ignore: 0x8Dc63ce8b979627C11f5EEf673990814D4815613 balance not great than the configure amount"
@@ -118,18 +118,18 @@ time="2018-08-13T15:45:46+08:00" level=warning msg="Ignore: 0x48031a8E6150B6ED53
 as you can see, the contructed transaction is export to ```/Users/hww/tx/unsign/``` folder, we can copy these unsign transaction to offline computer, which is holder our wallet keys, in this example, we handle it in my laptop too.
 #### Sign raw transaction
 ```bash
-▶ eth-cold-wallet sign
+▶ ethereum-cold-wallet sign
 time="2018-08-13T15:59:03+08:00" level=warning Note="all operate is recorded" Time:="Mon Aug 13 15:59:03 2018"
-time="2018-08-13T15:59:03+08:00" level=info Time:="Mon Aug 13 15:59:03 2018" Using Configure file=/Users/hww/eth-cold-wallet.yml
+time="2018-08-13T15:59:03+08:00" level=info Time:="Mon Aug 13 15:59:03 2018" Using Configure file=/Users/hww/ethereum-cold-wallet.yml
 time="2018-08-13T15:59:03+08:00" level=info msg="签名交易： 0x3f00ff54245328604a6f43f4de279de100d4afc8d5e7536eeaee7b531c2d64d2  To: 0x8Dc63ce8b979627C11f5EEf673990814D4815613"
 time="2018-08-13T15:59:04+08:00" level=info msg="Exported HexTx to /Users/hww/tx/signed/signed_from.0xe5379d64Cd7d2D963B03da01fB052218a9aCB0Ce.json"
 ```
 The transaction we constructed is signed and export json file to ```/Users/hww/tx/signed/``` folder, copy the result to broadcast the signed sendTransaction.
 #### broadcast signed transacion
 ```bash
-▶ eth-cold-wallet send
+▶ ethereum-cold-wallet send
 time="2018-08-13T16:03:18+08:00" level=warning Note="all operate is recorded" Time:="Mon Aug 13 16:03:18 2018"
-time="2018-08-13T16:03:18+08:00" level=info Time:="Mon Aug 13 16:03:18 2018" Using Configure file=/Users/hww/eth-cold-wallet.yml
+time="2018-08-13T16:03:18+08:00" level=info Time:="Mon Aug 13 16:03:18 2018" Using Configure file=/Users/hww/ethereum-cold-wallet.yml
 time="2018-08-13T16:03:18+08:00" level=info msg="send tx:  0xbdfece2382b6e08c265928578b11b00292582670ad5b2c7a90243267b892d41b success"
 ```
 log show we have send the transacion successfully, now we query the tx related addresses balance in web3 console:

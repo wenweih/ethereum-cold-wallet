@@ -130,7 +130,7 @@ func Execute() {
 func (conf *configure) InitConfig() {
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(HomeDir())
-	viper.SetConfigName("eth-cold-wallet")
+	viper.SetConfigName("ethereum-cold-wallet")
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
@@ -141,7 +141,7 @@ func (conf *configure) InitConfig() {
 			"Time:":                time.Now().Format("Mon Jan _2 15:04:05 2006"),
 		}).Info()
 	} else {
-		log.Fatal("Error: eth-cold-wallet.yml not found in: ", HomeDir())
+		log.Fatal("Error: ethereum-cold-wallet.yml not found in: ", HomeDir())
 	}
 
 	for key, value := range viper.AllSettings() {
